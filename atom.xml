@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
-    <title>Gridea</title>
-    <updated>2020-04-29T05:24:08.237Z</updated>
+    <title>lvelvis</title>
+    <updated>2020-04-29T05:37:16.024Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
+    <subtitle>时光,浓淡相宜;人心,远近相安;这就是最好的生活</subtitle>
     <logo>https://lvelvis.github.io/images/avatar.png</logo>
     <icon>https://lvelvis.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2020, Gridea</rights>
+    <rights>All rights reserved 2020, lvelvis</rights>
     <entry>
         <title type="html"><![CDATA[Hello Gridea]]></title>
         <id>https://lvelvis.github.io/post/hello-gridea/</id>
