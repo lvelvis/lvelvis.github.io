@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>lvelvis</title>
+<title>kubernetes搭建rook-ceph | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1588145188059">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,6 +29,8 @@
 
 
 
+  <meta name="description" content="kubernetes搭建rook-ceph" />
+  <meta name="keywords" content="k8s,rook-ceph,ceph" />
 </head>
 
 <body>
@@ -94,7 +96,7 @@
             
               
             
-            <li class="nav-item nav-item-active">
+            <li class="nav-item ">
               
               
                 <a href="/tags/" target="_self">
@@ -158,10 +160,26 @@
   <div class="main-continer">
     
     <div
-      class="section-layout bg-color mist">
+      class="section-layout mist bg-color">
       <div class="section-layout-wrapper">
-        <div id="sidebarMeta" class="sidebar">
-    
+        
+
+<div class="sidebar">
+  
+    <div class="sidebar-box box-shadow-wrapper  right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body mist" id="sidebar_body">
+        
+          
+            <div class="post-side-meta" id="post_side_meta">
+              
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -227,120 +245,833 @@
 
 
 </div>
+            </div>
+            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
+              <div class="toc-box right-motion">
+  <div class="toc-wrapper auto-number auto"
+    id="toc_wrapper">
+    <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
+<li><a href="#%E7%8E%AF%E5%A2%83">环境</a></li>
+<li><a href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C">准备工作</a></li>
+<li><a href="#%E5%BC%80%E5%A7%8B%E9%83%A8%E7%BD%B2operator">开始部署Operator</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
 </div>
+
 <script>
-  let sidebarMeta = document.querySelector('#sidebarMeta');
-  let scheme = 'mist';
-  let sidebarWrapper = document.querySelector('.sidebar-wrapper');
-  if (sidebarMeta && (scheme === 'pisces' || scheme === 'gemini')) {
-    document.addEventListener('scroll', function(e) {
-      if (document.scrollingElement.scrollTop > parseInt(sidebarMeta.style.marginTop) + 10) {
-        sidebarWrapper.classList.add('home-sidebar-fixed')
-      } else {
-        sidebarWrapper.classList.remove('home-sidebar-fixed')
+
+  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
+  let active = 'active-show', activeClass = 'active-current';
+  let tocWrapper = document.querySelector('#toc_wrapper');
+  let tocContent = tocWrapper.children[0];
+  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
+
+  function addTocNumber(elem, deep) {
+    if (!elem) {
+      return;
+    }
+    let prop = elem.__proto__;
+
+    if (prop === HTMLUListElement.prototype) {
+      for (let i = 0; i < elem.children.length; i++) {
+        addTocNumber(elem.children[i], deep + (i + 1) + '.');
       }
+    } else if (prop === HTMLLIElement.prototype) {
+      // 保存li元素
+      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
+        lList.push(elem);
+      }
+      for (let i = 0; i < elem.children.length; i++) {
+        let cur = elem.children[i];
+        if (cur.__proto__ === HTMLAnchorElement.prototype) {
+          if (autoNumber) {
+            cur.text = deep + ' ' + cur.text;
+          }
+        } else if (cur.__proto__ === HTMLUListElement.prototype) {
+          addTocNumber(cur, deep);
+        }
+      }
+    }
+  }
+
+  function removeParentActiveClass() {
+    let parents = tocContent.querySelectorAll('.' + active)
+    parents.forEach(function (elem) {
+      elem.classList.remove(active);
     });
   }
-  </script>
-        <div class="section-box box-shadow-wrapper">
-          <section class="section tags-section bg-color posts-expand">
-            <div class="tags-box">
-  <div class="tag-cloud-title">
-    目前共计 3 个标签
-  </div>
-  <div class="tag-cloud-list" id="tags">
-    
-      
-      
-        
-      
-        
-          
-            
-      
-      <a class="cloud-tag" href="https://lvelvis.github.io/tag/Q617Y3Kh2/" rel="1">k8s</a>
-    
-      
-      
-        
-      
-        
-          
-        
-          
-            
-      
-      <a class="cloud-tag" href="https://lvelvis.github.io/tag/hu0mNDfuy/" rel="1">rook-ceph</a>
-    
-      
-      
-        
-      
-        
-          
-        
-          
-        
-          
-            
-      
-      <a class="cloud-tag" href="https://lvelvis.github.io/tag/MkN4-Vurh-/" rel="1">ceph</a>
-    
-  </div>
-</div>
-<script>
 
-  let fontStart = 12, fontEnd = 30, colorStart = '#666', colorEnd = '#000';
-  let tags = document.querySelector('#tags').children;
-  let counts = [];
-  for(let i = 0; i < tags.length; i++) {
-    counts.push(tags[i].rel);
-  }
-  let lowest = Math.min.apply(null,counts), highest = Math.max.apply(null,counts);;
-  let range = highest - lowest;
-  if (range === 0) {
-    range = 1;
-  }
-  let fontIncr, colorIncr;
-  fontIncr = (fontEnd - fontStart) / range;
-  
-  let sColorArr = toRGB(colorStart), eColorArr = toRGB(colorEnd);
-
-  for(let i = 0; i < tags.length; i++) {
-    let disCount = tags[i].rel - lowest;
-    let fontSize = fontStart + disCount * fontIncr;
-    let style = 'font-size: ' + fontSize + 'px;';
-    let arr = [];
-    for(let c = 0; c < sColorArr.length; c++) {
-      if (disCount === 0) {
-        disCount = 1;
-      }
-      let val = (sColorArr[c] - eColorArr[c]) / range * disCount;
-      if (val >= 100) {
-        val = eColorArr[c];
-      } else if (val <= 0) {
-        val = sColorArr[c];
-      }
-      arr[c] = Math.floor(val);
+  function addActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.add(activeClass);
     }
-    style += 'color: ' + toHex(arr);
-    tags[i].style = style;
   }
 
-  function toRGB(code) {
-    if (code.length === 4) {
-      code = code.replace(/(\w)(\w)(\w)/gi, "\$1\$1\$2\$2\$3\$3");
+  function removeActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.remove(activeClass);
     }
-    var hex = /(\w{2})(\w{2})(\w{2})/.exec(code);
-    return [parseInt(hex[1], 16), parseInt(hex[2], 16), parseInt(hex[3], 16)];
   }
 
-  function toHex(ary) {
-    return "#" + ((1 << 24) + (ary[0] << 16) + (ary[1] << 8) + ary[2]).toString(16).slice(1);
+  function addActiveLiElemment(elem, parent) {
+    if (!elem || elem === parent) {
+      return;
+    } else {
+      if (elem.__proto__ === HTMLLIElement.prototype) {
+        elem.classList.add(active);
+      }
+      addActiveLiElemment(elem.parentElement, parent);
+    }
   }
+
+  function showToc() {
+    if (tocWrapper) {
+      postBody = document.querySelector('#post_body');
+      for (let i = 0; i < postBody.children.length; i++) {
+        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
+          hList.push(postBody.children[i]);
+        }
+      }
+      if (tocWrapper.classList.contains('compress')) {
+        tocContent.classList.add('closed');
+      } else if (tocWrapper.classList.contains('no_compress')) {
+        tocContent.classList.add('expanded');
+      } else {
+        if (hList.length > 10) {
+          active = 'active-hidden'
+          tocContent.classList.add('closed');
+        } else {
+          tocContent.classList.add('expanded');
+        }
+      }
+    }
+  }
+
+  (function () {
+    // 处理不是从#一级标题开始目录
+    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
+      let con = tocContent.children[0].children[0];
+      tocContent.innerHTML = con.innerHTML;
+    }
+    let markdownItTOC = document.querySelector('.markdownIt-TOC');
+    let innerHeight = window.innerHeight;
+    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
+    addTocNumber(tocContent, '');
+  })();
+
+  document.addEventListener('scroll', function (e) {
+    if (lList.length <= 0) {
+      return;
+    }
+    let scrollTop = document.scrollingElement.scrollTop + 10;
+    let dir;
+
+    if (lastTop - scrollTop > 0) {
+      dir = 'up';
+    } else {
+      dir = 'down';
+    }
+
+    lastTop = scrollTop;
+    if (scrollTop <= 0) {
+      if (lastIndex >= 0 && lastIndex < hList.length) {
+        lList[lastIndex].classList.remove(activeClass);
+      }
+      return;
+    }
+
+    let current = 0, hasFind = false;
+    for (let i = 0; i < hList.length; i++) {
+      if (hList[i].offsetTop > scrollTop) {
+        current = i;
+        hasFind = true;
+        break;
+      }
+    }
+    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
+      current = hList.length - 1;
+    } else {
+      current--;
+    }
+    if (dir === 'down') {
+      if (current > lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex)
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    } else {
+      if (current < lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex);
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    }
+  });
+
+
+  window.addEventListener('load', function () {
+    showToc();
+    document.querySelector('#sidebar').style = 'display: block;';
+    tocWrapper.classList.add('toc-active');
+    setTimeout(function () {
+      if ("createEvent" in document) {
+        let evt = document.createEvent("HTMLEvents");
+        evt.initEvent("scroll", false, true);
+        document.dispatchEvent(evt);
+      }
+      else {
+        document.fireEvent("scroll");
+      }
+    }, 500)
+  })
 
 </script>
-          </section>
+            </div>
+          
+        
+      </div>
+    </div>
+  
+</div>
+<script>
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
+      }
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
+  }
+
+  postToc && postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+  if (sidebarBody) {
+    if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+      let hasFix = false;
+      let scrollEl = document.querySelector('.main-continer');
+      let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+      window.addEventListener('scroll', function(e) {
+        if (document.scrollingElement.scrollTop >= limitTop) {
+          if (!hasFix) {
+            sidebar.classList.add('sidebar-fixed');
+            hasFix = true;
+          }
+        } else {
+          if (hasFix) {
+            sidebar.classList.remove('sidebar-fixed');
+            hasFix = false;
+          }
+        }
+      });
+    }
+  }
+  
+</script>
+        <div class="section-box box-shadow-wrapper">
+          <div class="section bg-color post post-page">
+            <header class="post-header">
+  <h1 class="post-title">
+    <a class="post-title-link" href="https://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
+      kubernetes搭建rook-ceph
+    </a>
+  </h1>
+  <div class="post-meta">
+    
+    <span class="meta-item pc-show">
+      <i class="fa fa-calendar-o"></i>
+      <span>发布于</span>
+      <span>2018-12-12</span>
+      <span class="post-meta-divider pc-show">|</span>
+    </span>
+    
+    <span class="meta-item">
+      <i class="fa fa-folder-o"></i>
+      <span class="pc-show">分类于</span>
+      
+      
+      <a href="https://lvelvis.github.io/tag/Q617Y3Kh2/">
+        <span>k8s</span>
+      </a>、
+      
+      
+      
+      <a href="https://lvelvis.github.io/tag/hu0mNDfuy/">
+        <span>rook-ceph</span>
+      </a>、
+      
+      
+      
+      <a href="https://lvelvis.github.io/tag/MkN4-Vurh-/">
+        <span>ceph</span>
+      </a>
+      
+      
+    </span>
+    <span class="post-meta-divider">|</span>
+    
+    <span class="meta-item">
+      <i class="fa fa-clock-o"></i>
+      <span>14分钟</span>
+    </span>
+    <span class="meta-item">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-file-word-o"></i>
+      <span>2695<span class="pc-show">字数</span></span>
+    </span>
+    
+  </div>
+</header>
+            <div class="post-body next-md-body" id="post_body">
+              <h3 id="简介">简介</h3>
+<p>Rook官网：https://rook.io<br>
+Rook是云原生计算基金会(CNCF)的孵化级项目.<br>
+Rook是Kubernetes的开源云本地存储协调器，为各种存储解决方案提供平台，框架和支持，以便与云原生环境本地集成。<br>
+至于CEPH，官网在这：https://ceph.com/<br>
+ceph官方提供的helm部署，至今我没成功过，所以转向使用rook提供的方案<br>
+有道笔记原文：http://note.youdao.com/noteshare?id=281719f1f0374f787effc90067e0d5ad&amp;sub=0B59EA339D4A4769B55F008D72C1A4C0</p>
+<h3 id="环境">环境</h3>
+<p>centos 7.5<br>
+kernel 4.18.7-1.el7.elrepo.x86_64</p>
+<p>docker 18.06</p>
+<p>kubernetes v1.12.2<br>
+kubeadm部署：<br>
+网络: canal<br>
+DNS: coredns<br>
+集群成员：<br>
+192.168.1.1 kube-master<br>
+192.168.1.2 kube-node1<br>
+192.168.1.3 kube-node2<br>
+192.168.1.4 kube-node3<br>
+192.168.1.5 kube-node4</p>
+<p>所有node节点准备一块200G的磁盘：/dev/sdb<br>
+kubernetes搭建rook-ceph</p>
+<h3 id="准备工作">准备工作</h3>
+<p>所有节点开启ip_forward</p>
+<pre><code>cat &lt;&lt;EOF &gt;  /etc/sysctl.d/ceph.conf
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+</code></pre>
+<p>sysctl -p</p>
+<h3 id="开始部署operator">开始部署Operator</h3>
+<p>部署Rook Operator<br>
+#无另外说明，全部操作都在master操作</p>
+<pre><code>cd $HOME
+git clone https://github.com/rook/rook.git
+
+cd rook
+cd cluster/examples/kubernetes/ceph
+kubectl apply -f operator.yaml
+</code></pre>
+<p>kubernetes搭建rook-ceph</p>
+<p>查看Operator的状态<br>
+#执行apply之后稍等一会。<br>
+#operator会在集群内的每个主机创建两个pod:rook-discover,rook-ceph-agent</p>
+<p>kubectl -n rook-ceph-system get pod -o wide<br>
+kubernetes搭建rook-ceph</p>
+<p>给节点打标签<br>
+运行ceph-mon的节点打上：ceph-mon=enabled<br>
+kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-mon=enabled<br>
+运行ceph-osd的节点，也就是存储节点，打上：ceph-osd=enabled<br>
+kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-osd=enabled<br>
+运行ceph-mgr的节点，打上：ceph-mgr=enabled<br>
+#mgr只能支持一个节点运行，这是ceph跑k8s里的局限<br>
+kubectl label nodes kube-node1 ceph-mgr=enabled<br>
+配置cluster.yaml文件<br>
+官方配置文件详解：https://rook.io/docs/rook/v0.8/ceph-cluster-crd.html</p>
+<p>文件中有几个地方要注意：</p>
+<p>dataDirHostPath: 这个路径是会在宿主机上生成的，保存的是ceph的相关的配置文件，再重新生成集群的时候要确保这个目录为空，否则mon会无法启动<br>
+useAllDevices: 使用所有的设备，建议为false，否则会把宿主机所有可用的磁盘都干掉<br>
+useAllNodes：使用所有的node节点，建议为false，肯定不会用k8s集群内的所有node来搭建ceph的<br>
+databaseSizeMB和journalSizeMB：当磁盘大于100G的时候，就注释这俩项就行了<br>
+本次实验用到的 cluster.yaml 文件内容如下：</p>
+<pre><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: rook-ceph
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;configmaps&quot;]
+  verbs: [ &quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;delete&quot; ]
+---
+# Allow the operator to create resources in this cluster's namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster-mgmt
+  namespace: rook-ceph
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-cluster-mgmt
+subjects:
+- kind: ServiceAccount
+  name: rook-ceph-system
+  namespace: rook-ceph-system
+---
+# Allow the pods in this namespace to work with configmaps
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-cluster
+subjects:
+- kind: ServiceAccount
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+---
+apiVersion: ceph.rook.io/v1beta1
+kind: Cluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  cephVersion:
+    # The container image used to launch the Ceph daemon pods (mon, mgr, osd, mds, rgw).
+    # v12 is luminous, v13 is mimic, and v14 is nautilus.
+    # RECOMMENDATION: In production, use a specific version tag instead of the general v13 flag, which pulls the latest release and could result in different
+    # versions running within the cluster. See tags available at https://hub.docker.com/r/ceph/ceph/tags/.
+    image: ceph/ceph:v13
+    # Whether to allow unsupported versions of Ceph. Currently only luminous and mimic are supported.
+    # After nautilus is released, Rook will be updated to support nautilus.
+    # Do not set to true in production.
+    allowUnsupported: false
+  # The path on the host where configuration files will be persisted. If not specified, a kubernetes emptyDir will be created (not recommended).
+  # Important: if you reinstall the cluster, make sure you delete this directory from each host or else the mons will fail to start on the new cluster.
+  # In Minikube, the '/data' directory is configured to persist across reboots. Use &quot;/data/rook&quot; in Minikube environment.
+  dataDirHostPath: /var/lib/rook
+  # The service account under which to run the daemon pods in this cluster if the default account is not sufficient (OSDs)
+  serviceAccount: rook-ceph-cluster
+  # set the amount of mons to be started
+  # count可以定义ceph-mon运行的数量，这里默认三个就行了
+  mon:
+    count: 3
+    allowMultiplePerNode: true
+  # enable the ceph dashboard for viewing cluster status
+  # 开启ceph资源面板
+  dashboard:
+    enabled: true
+    # serve the dashboard under a subpath (useful when you are accessing the dashboard via a reverse proxy)
+    # urlPrefix: /ceph-dashboard
+  network:
+    # toggle to use hostNetwork
+    # 使用宿主机的网络进行通讯
+    # 使用宿主机的网络貌似可以让集群外的主机挂载ceph
+    # 但是我没试过，有兴趣的兄弟可以试试改成true
+    # 反正这里只是集群内用，我就不改了
+    hostNetwork: false
+  # To control where various services will be scheduled by kubernetes, use the placement configuration sections below.
+  # The example under 'all' would have all services scheduled on kubernetes nodes labeled with 'role=storage-node' and
+  # tolerate taints with a key of 'storage-node'.
+  placement:
+#    all:
+#      nodeAffinity:
+#        requiredDuringSchedulingIgnoredDuringExecution:
+#          nodeSelectorTerms:
+#          - matchExpressions:
+#            - key: role
+#              operator: In
+#              values:
+#              - storage-node
+#      podAffinity:
+#      podAntiAffinity:
+#      tolerations:
+#      - key: storage-node
+#        operator: Exists
+# The above placement information can also be specified for mon, osd, and mgr components
+#    mon:
+#    osd:
+#    mgr:
+# nodeAffinity：通过选择标签的方式，可以限制pod被调度到特定的节点上
+# 建议限制一下，为了让这几个pod不乱跑
+    mon:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mon
+              operator: In
+              values:
+              - enabled
+    osd:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-osd
+              operator: In
+              values:
+              - enabled
+    mgr:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mgr
+              operator: In
+              values:
+              - enabled
+  resources:
+# The requests and limits set here, allow the mgr pod to use half of one CPU core and 1 gigabyte of memory
+#    mgr:
+#      limits:
+#        cpu: &quot;500m&quot;
+#        memory: &quot;1024Mi&quot;
+#      requests:
+#        cpu: &quot;500m&quot;
+#        memory: &quot;1024Mi&quot;
+# The above example requests/limits can also be added to the mon and osd components
+#    mon:
+#    osd:
+  storage: # cluster level storage configuration and selection
+    useAllNodes: false
+    useAllDevices: false
+    deviceFilter:
+    location:
+    config:
+      # The default and recommended storeType is dynamically set to bluestore for devices and filestore for directories.
+      # Set the storeType explicitly only if it is required not to use the default.
+      # storeType: bluestore
+      # databaseSizeMB: &quot;1024&quot; # this value can be removed for environments with normal sized disks (100 GB or larger)
+      # journalSizeMB: &quot;1024&quot;  # this value can be removed for environments with normal sized disks (20 GB or larger)
+# Cluster level list of directories to use for storage. These values will be set for all nodes that have no `directories` set.
+#    directories:
+#    - path: /rook/storage-dir
+# Individual nodes and their config can be specified as well, but 'useAllNodes' above must be set to false. Then, only the named
+# nodes below will be used as storage resources.  Each node's 'name' field should match their 'kubernetes.io/hostname' label.
+#建议磁盘配置方式如下：
+#name: 选择一个节点，节点名字为kubernetes.io/hostname的标签，也就是kubectl get nodes看到的名字
+#devices: 选择磁盘设置为OSD
+# - name: &quot;sdb&quot;:将/dev/sdb设置为osd
+    nodes:
+    - name: &quot;kube-node1&quot;
+      devices:
+      - name: &quot;sdb&quot;
+    - name: &quot;kube-node2&quot;
+      devices:
+      - name: &quot;sdb&quot;
+    - name: &quot;kube-node3&quot;
+      devices:
+      - name: &quot;sdb&quot;
+
+#      directories: # specific directories to use for storage can be specified for each node
+#      - path: &quot;/rook/storage-dir&quot;
+#      resources:
+#        limits:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#        requests:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#    - name: &quot;172.17.4.201&quot;
+#      devices: # specific devices to use for storage can be specified for each node
+#      - name: &quot;sdb&quot;
+#      - name: &quot;sdc&quot;
+#      config: # configuration can be specified at the node level which overrides the cluster level config
+#        storeType: filestore
+#    - name: &quot;172.17.4.301&quot;
+#      deviceFilter: &quot;^sd.&quot;
+</code></pre>
+<p>开始部署ceph<br>
+部署ceph<br>
+kubectl apply -f cluster.yaml<br>
+cluster会在rook-ceph这个namesapce创建资源<br>
+盯着这个namesapce的pod你就会发现，它在按照顺序创建Pod</p>
+<p>kubectl -n rook-ceph get pod -o wide  -w</p>
+<p>看到所有的pod都Running就行了<br>
+注意看一下pod分布的宿主机，跟我们打标签的主机是一致的</p>
+<p>kubectl -n rook-ceph get pod -o wide<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>切换到其他主机看一下磁盘</p>
+<p>切换到kube-node1<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>切换到kube-node3<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>配置ceph dashboard<br>
+看一眼dashboard在哪个service上<br>
+kubectl -n rook-ceph get service<br>
+可以看到dashboard监听了8443端口<br>
+kubernetes搭建rook-ceph</p>
+<p>创建个nodeport类型的service以便集群外部访问<br>
+kubectl apply -f dashboard-external-https.yaml</p>
+<p>查看一下nodeport在哪个端口<br>
+ss -tanl<br>
+kubectl -n rook-ceph get service<br>
+kubernetes搭建rook-ceph</p>
+<p>找出Dashboard的登陆账号和密码<br>
+MGR_POD=<code>kubectl get pod -n rook-ceph | grep mgr | awk '{print $1}'</code></p>
+<p>kubectl -n rook-ceph logs $MGR_POD | grep password<br>
+kubernetes搭建rook-ceph</p>
+<p>打开浏览器输入任意一个Node的IP+nodeport端口<br>
+这里我的就是：https://192.168.1.2:30290<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>配置ceph为storageclass<br>
+官方给了一个样本文件：storageclass.yaml<br>
+这个文件使用的是 RBD 块存储<br>
+pool创建详解：https://rook.io/docs/rook/v0.8/ceph-pool-crd.html</p>
+<pre><code>apiVersion: ceph.rook.io/v1beta1
+kind: Pool
+metadata:
+  #这个name就是创建成ceph pool之后的pool名字
+  name: replicapool
+  namespace: rook-ceph
+spec:
+  replicated:
+    size: 1
+  # size 池中数据的副本数,1就是不保存任何副本
+  failureDomain: osd
+  #  failureDomain：数据块的故障域，
+  #  值为host时，每个数据块将放置在不同的主机上
+  #  值为osd时，每个数据块将放置在不同的osd上
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: ceph
+   # StorageClass的名字，pvc调用时填的名字
+provisioner: ceph.rook.io/block
+parameters:
+  pool: replicapool
+  # Specify the namespace of the rook cluster from which to create volumes.
+  # If not specified, it will use `rook` as the default namespace of the cluster.
+  # This is also the namespace where the cluster will be
+  clusterNamespace: rook-ceph
+  # Specify the filesystem type of the volume. If not specified, it will use `ext4`.
+  fstype: xfs
+# 设置回收策略默认为：Retain
+reclaimPolicy: Retain
+</code></pre>
+<p>创建StorageClass<br>
+kubectl apply -f storageclass.yaml<br>
+kubectl get storageclasses.storage.k8s.io  -n rook-ceph<br>
+kubectl describe storageclasses.storage.k8s.io  -n rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>创建个nginx pod尝试挂载</p>
+<pre><code>cat &lt;&lt; EOF &gt; nginx.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ceph
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx
+  ports: 
+  - port: 80
+    name: nginx-port
+    targetPort: 80
+    protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /html
+          name: http-file
+      volumes:
+      - name: http-file
+        persistentVolumeClaim:
+          claimName: nginx-pvc
+EOF
+</code></pre>
+<p>kubectl apply -f nginx.yaml<br>
+查看pv,pvc是否创建了<br>
+kubectl get pv,pvc</p>
+<p>看一下nginx这个pod也运行了<br>
+kubectl get pod<br>
+kubernetes搭建rook-ceph</p>
+<p>删除这个pod,看pv是否还存在<br>
+kubectl delete -f nginx.yaml</p>
+<p>kubectl get pv,pvc<br>
+可以看到，pod和pvc都已经被删除了，但是pv还在！！！<br>
+kubernetes搭建rook-ceph</p>
+<p>添加新的OSD进入集群<br>
+这次我们要把node4添加进集群，先打标签<br>
+kubectl label nodes kube-node4 ceph-osd=enabled<br>
+重新编辑cluster.yaml文件<br>
+原来的基础上添加node4的信息</p>
+<p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
+vi cluster.yam<br>
+kubernetes搭建rook-ceph</p>
+<p>apply一下cluster.yaml文件<br>
+kubectl apply -f cluster.yaml</p>
+<p>盯着rook-ceph名称空间,集群会自动添加node4进来</p>
+<p>kubectl -n rook-ceph get pod -o wide -w<br>
+kubectl -n rook-ceph get pod -o wide<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>去node4节点看一下磁盘<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>再打开dashboard看一眼<br>
+kubernetes搭建rook-ceph</p>
+<p>删除一个节点<br>
+去掉node3的标签<br>
+kubectl label nodes kube-node3 ceph-osd-<br>
+重新编辑cluster.yaml文件<br>
+删除node3的信息</p>
+<p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
+vi cluster.yam<br>
+kubernetes搭建rook-ceph</p>
+<p>apply一下cluster.yaml文件<br>
+kubectl apply -f cluster.yaml</p>
+<p>盯着rook-ceph名称空间</p>
+<p>kubectl -n rook-ceph get pod -o wide -w<br>
+kubectl -n rook-ceph get pod -o wide</p>
+<p>最后记得删除宿主机的/var/lib/rook文件夹<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+
+            </div>
+            <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong>本文作者：</strong>
+      lvelvis
+    </li>
+    <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://lvelvis.github.io/post/kubernetes搭建rook-ceph/" title="kubernetes搭建rook-ceph">https://lvelvis.github.io/post/kubernetes搭建rook-ceph/</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong>
+      本博客所有文章除特别声明外，均采用<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i> BY-NC-SA</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+  <div class="tags">
+    
+      <a href="https://lvelvis.github.io/tag/Q617Y3Kh2/"># k8s</a>
+    
+      <a href="https://lvelvis.github.io/tag/hu0mNDfuy/"># rook-ceph</a>
+    
+      <a href="https://lvelvis.github.io/tag/MkN4-Vurh-/"># ceph</a>
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
+      
+    </div>
+    <div class="nav-next">
+      
+    </div>
+  </div>
+</div>
+            
+  
+
+          </div>
         </div>
       </div>
     </div>
@@ -512,6 +1243,36 @@
   // 代码高亮
   hljs.initHighlightingOnLoad();
 
+</script>
+    <div class="light-box" id="light_box"></div>
+<script>
+  let imgs = document.querySelectorAll('.post-body img');
+  let lightBox = document.querySelector('#light_box');
+  lightBox.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+  })
+  lightBox.addEventListener('mousewheel', (e) => {
+    e.preventDefault()
+  })
+  let width = window.innerWidth * 0.8;
+  lightBox.onclick = () => {
+    let img = lightBox.querySelector('img');
+    lightBox.style = '';
+    img && img.remove();
+  }
+  imgs.forEach(item => {
+    item.onclick = function (e) {
+      let lightImg = document.createElement('img');
+      lightImg.src = this.src;
+      lightBox.style = `height: 100%; opacity: 1; background-color: rgba(0, 0, 0, 0.5);cursor: zoom-out;`;
+      lightImg.style = `width: ${width}px; border: 1px solid #fff; border-radius: 2px;`;
+      lightImg.onclick = function () {
+        lightBox.style = '';
+        this.remove();
+      }
+      lightBox.append(lightImg);
+    }
+  })
 </script>
   </div>
 </body>
@@ -1118,7 +1879,6 @@ kubernetes搭建rook-ceph&lt;/p&gt;
 </script> -->
 
 <script src="/media/js/mouse/peace.js"></script>
-
 
 
 </html>

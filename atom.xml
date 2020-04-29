@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-29T05:37:16.024Z</updated>
+    <updated>2020-04-29T07:27:17.644Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -11,35 +11,465 @@
     <icon>https://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
     <entry>
-        <title type="html"><![CDATA[Hello Gridea]]></title>
-        <id>https://lvelvis.github.io/post/hello-gridea/</id>
-        <link href="https://lvelvis.github.io/post/hello-gridea/">
+        <title type="html"><![CDATA[kubernetes搭建rook-ceph]]></title>
+        <id>https://lvelvis.github.io/post/kubernetes搭建rook-ceph/</id>
+        <link href="https://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
         </link>
         <updated>2018-12-11T16:00:00.000Z</updated>
-        <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
-]]></summary>
-        <content type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
-<!-- more -->
-<p><a href="https://github.com/getgridea/gridea">Github</a><br>
-<a href="https://gridea.dev/">Gridea 主页</a><br>
-<a href="http://fehey.com/">示例网站</a></p>
-<h2 id="特性">特性👇</h2>
-<p>📝  你可以使用最酷的 <strong>Markdown</strong> 语法，进行快速创作</p>
-<p>🌉  你可以给文章配上精美的封面图和在文章任意位置插入图片</p>
-<p>🏷️  你可以对文章进行标签分组</p>
-<p>📋  你可以自定义菜单，甚至可以创建外部链接菜单</p>
-<p>💻  你可以在 <strong>Windows</strong>，<strong>MacOS</strong> 或 <strong>Linux</strong> 设备上使用此客户端</p>
-<p>🌎  你可以使用 <strong>𝖦𝗂𝗍𝗁𝗎𝖻 𝖯𝖺𝗀𝖾𝗌</strong> 或 <strong>Coding Pages</strong> 向世界展示，未来将支持更多平台</p>
-<p>💬  你可以进行简单的配置，接入 <a href="https://github.com/gitalk/gitalk">Gitalk</a> 或 <a href="https://github.com/SukkaW/DisqusJS">DisqusJS</a> 评论系统</p>
-<p>🇬🇧  你可以使用<strong>中文简体</strong>或<strong>英语</strong></p>
-<p>🌁  你可以任意使用应用内默认主题或任意第三方主题，强大的主题自定义能力</p>
-<p>🖥  你可以自定义源文件夹，利用 OneDrive、百度网盘、iCloud、Dropbox 等进行多设备同步</p>
-<p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前 🏃</p>
-<p>未来，它一定会成为你离不开的伙伴</p>
-<p>尽情发挥你的才华吧！</p>
-<p>😘 Enjoy~</p>
+        <content type="html"><![CDATA[<h3 id="简介">简介</h3>
+<p>Rook官网：https://rook.io<br>
+Rook是云原生计算基金会(CNCF)的孵化级项目.<br>
+Rook是Kubernetes的开源云本地存储协调器，为各种存储解决方案提供平台，框架和支持，以便与云原生环境本地集成。<br>
+至于CEPH，官网在这：https://ceph.com/<br>
+ceph官方提供的helm部署，至今我没成功过，所以转向使用rook提供的方案<br>
+有道笔记原文：http://note.youdao.com/noteshare?id=281719f1f0374f787effc90067e0d5ad&amp;sub=0B59EA339D4A4769B55F008D72C1A4C0</p>
+<h3 id="环境">环境</h3>
+<p>centos 7.5<br>
+kernel 4.18.7-1.el7.elrepo.x86_64</p>
+<p>docker 18.06</p>
+<p>kubernetes v1.12.2<br>
+kubeadm部署：<br>
+网络: canal<br>
+DNS: coredns<br>
+集群成员：<br>
+192.168.1.1 kube-master<br>
+192.168.1.2 kube-node1<br>
+192.168.1.3 kube-node2<br>
+192.168.1.4 kube-node3<br>
+192.168.1.5 kube-node4</p>
+<p>所有node节点准备一块200G的磁盘：/dev/sdb<br>
+kubernetes搭建rook-ceph</p>
+<h3 id="准备工作">准备工作</h3>
+<p>所有节点开启ip_forward</p>
+<pre><code>cat &lt;&lt;EOF &gt;  /etc/sysctl.d/ceph.conf
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+</code></pre>
+<p>sysctl -p</p>
+<h3 id="开始部署operator">开始部署Operator</h3>
+<p>部署Rook Operator<br>
+#无另外说明，全部操作都在master操作</p>
+<pre><code>cd $HOME
+git clone https://github.com/rook/rook.git
+
+cd rook
+cd cluster/examples/kubernetes/ceph
+kubectl apply -f operator.yaml
+</code></pre>
+<p>kubernetes搭建rook-ceph</p>
+<p>查看Operator的状态<br>
+#执行apply之后稍等一会。<br>
+#operator会在集群内的每个主机创建两个pod:rook-discover,rook-ceph-agent</p>
+<p>kubectl -n rook-ceph-system get pod -o wide<br>
+kubernetes搭建rook-ceph</p>
+<p>给节点打标签<br>
+运行ceph-mon的节点打上：ceph-mon=enabled<br>
+kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-mon=enabled<br>
+运行ceph-osd的节点，也就是存储节点，打上：ceph-osd=enabled<br>
+kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-osd=enabled<br>
+运行ceph-mgr的节点，打上：ceph-mgr=enabled<br>
+#mgr只能支持一个节点运行，这是ceph跑k8s里的局限<br>
+kubectl label nodes kube-node1 ceph-mgr=enabled<br>
+配置cluster.yaml文件<br>
+官方配置文件详解：https://rook.io/docs/rook/v0.8/ceph-cluster-crd.html</p>
+<p>文件中有几个地方要注意：</p>
+<p>dataDirHostPath: 这个路径是会在宿主机上生成的，保存的是ceph的相关的配置文件，再重新生成集群的时候要确保这个目录为空，否则mon会无法启动<br>
+useAllDevices: 使用所有的设备，建议为false，否则会把宿主机所有可用的磁盘都干掉<br>
+useAllNodes：使用所有的node节点，建议为false，肯定不会用k8s集群内的所有node来搭建ceph的<br>
+databaseSizeMB和journalSizeMB：当磁盘大于100G的时候，就注释这俩项就行了<br>
+本次实验用到的 cluster.yaml 文件内容如下：</p>
+<pre><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: rook-ceph
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;configmaps&quot;]
+  verbs: [ &quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;delete&quot; ]
+---
+# Allow the operator to create resources in this cluster's namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster-mgmt
+  namespace: rook-ceph
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-cluster-mgmt
+subjects:
+- kind: ServiceAccount
+  name: rook-ceph-system
+  namespace: rook-ceph-system
+---
+# Allow the pods in this namespace to work with configmaps
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rook-ceph-cluster
+subjects:
+- kind: ServiceAccount
+  name: rook-ceph-cluster
+  namespace: rook-ceph
+---
+apiVersion: ceph.rook.io/v1beta1
+kind: Cluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  cephVersion:
+    # The container image used to launch the Ceph daemon pods (mon, mgr, osd, mds, rgw).
+    # v12 is luminous, v13 is mimic, and v14 is nautilus.
+    # RECOMMENDATION: In production, use a specific version tag instead of the general v13 flag, which pulls the latest release and could result in different
+    # versions running within the cluster. See tags available at https://hub.docker.com/r/ceph/ceph/tags/.
+    image: ceph/ceph:v13
+    # Whether to allow unsupported versions of Ceph. Currently only luminous and mimic are supported.
+    # After nautilus is released, Rook will be updated to support nautilus.
+    # Do not set to true in production.
+    allowUnsupported: false
+  # The path on the host where configuration files will be persisted. If not specified, a kubernetes emptyDir will be created (not recommended).
+  # Important: if you reinstall the cluster, make sure you delete this directory from each host or else the mons will fail to start on the new cluster.
+  # In Minikube, the '/data' directory is configured to persist across reboots. Use &quot;/data/rook&quot; in Minikube environment.
+  dataDirHostPath: /var/lib/rook
+  # The service account under which to run the daemon pods in this cluster if the default account is not sufficient (OSDs)
+  serviceAccount: rook-ceph-cluster
+  # set the amount of mons to be started
+  # count可以定义ceph-mon运行的数量，这里默认三个就行了
+  mon:
+    count: 3
+    allowMultiplePerNode: true
+  # enable the ceph dashboard for viewing cluster status
+  # 开启ceph资源面板
+  dashboard:
+    enabled: true
+    # serve the dashboard under a subpath (useful when you are accessing the dashboard via a reverse proxy)
+    # urlPrefix: /ceph-dashboard
+  network:
+    # toggle to use hostNetwork
+    # 使用宿主机的网络进行通讯
+    # 使用宿主机的网络貌似可以让集群外的主机挂载ceph
+    # 但是我没试过，有兴趣的兄弟可以试试改成true
+    # 反正这里只是集群内用，我就不改了
+    hostNetwork: false
+  # To control where various services will be scheduled by kubernetes, use the placement configuration sections below.
+  # The example under 'all' would have all services scheduled on kubernetes nodes labeled with 'role=storage-node' and
+  # tolerate taints with a key of 'storage-node'.
+  placement:
+#    all:
+#      nodeAffinity:
+#        requiredDuringSchedulingIgnoredDuringExecution:
+#          nodeSelectorTerms:
+#          - matchExpressions:
+#            - key: role
+#              operator: In
+#              values:
+#              - storage-node
+#      podAffinity:
+#      podAntiAffinity:
+#      tolerations:
+#      - key: storage-node
+#        operator: Exists
+# The above placement information can also be specified for mon, osd, and mgr components
+#    mon:
+#    osd:
+#    mgr:
+# nodeAffinity：通过选择标签的方式，可以限制pod被调度到特定的节点上
+# 建议限制一下，为了让这几个pod不乱跑
+    mon:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mon
+              operator: In
+              values:
+              - enabled
+    osd:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-osd
+              operator: In
+              values:
+              - enabled
+    mgr:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: ceph-mgr
+              operator: In
+              values:
+              - enabled
+  resources:
+# The requests and limits set here, allow the mgr pod to use half of one CPU core and 1 gigabyte of memory
+#    mgr:
+#      limits:
+#        cpu: &quot;500m&quot;
+#        memory: &quot;1024Mi&quot;
+#      requests:
+#        cpu: &quot;500m&quot;
+#        memory: &quot;1024Mi&quot;
+# The above example requests/limits can also be added to the mon and osd components
+#    mon:
+#    osd:
+  storage: # cluster level storage configuration and selection
+    useAllNodes: false
+    useAllDevices: false
+    deviceFilter:
+    location:
+    config:
+      # The default and recommended storeType is dynamically set to bluestore for devices and filestore for directories.
+      # Set the storeType explicitly only if it is required not to use the default.
+      # storeType: bluestore
+      # databaseSizeMB: &quot;1024&quot; # this value can be removed for environments with normal sized disks (100 GB or larger)
+      # journalSizeMB: &quot;1024&quot;  # this value can be removed for environments with normal sized disks (20 GB or larger)
+# Cluster level list of directories to use for storage. These values will be set for all nodes that have no `directories` set.
+#    directories:
+#    - path: /rook/storage-dir
+# Individual nodes and their config can be specified as well, but 'useAllNodes' above must be set to false. Then, only the named
+# nodes below will be used as storage resources.  Each node's 'name' field should match their 'kubernetes.io/hostname' label.
+#建议磁盘配置方式如下：
+#name: 选择一个节点，节点名字为kubernetes.io/hostname的标签，也就是kubectl get nodes看到的名字
+#devices: 选择磁盘设置为OSD
+# - name: &quot;sdb&quot;:将/dev/sdb设置为osd
+    nodes:
+    - name: &quot;kube-node1&quot;
+      devices:
+      - name: &quot;sdb&quot;
+    - name: &quot;kube-node2&quot;
+      devices:
+      - name: &quot;sdb&quot;
+    - name: &quot;kube-node3&quot;
+      devices:
+      - name: &quot;sdb&quot;
+
+#      directories: # specific directories to use for storage can be specified for each node
+#      - path: &quot;/rook/storage-dir&quot;
+#      resources:
+#        limits:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#        requests:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#    - name: &quot;172.17.4.201&quot;
+#      devices: # specific devices to use for storage can be specified for each node
+#      - name: &quot;sdb&quot;
+#      - name: &quot;sdc&quot;
+#      config: # configuration can be specified at the node level which overrides the cluster level config
+#        storeType: filestore
+#    - name: &quot;172.17.4.301&quot;
+#      deviceFilter: &quot;^sd.&quot;
+</code></pre>
+<p>开始部署ceph<br>
+部署ceph<br>
+kubectl apply -f cluster.yaml<br>
+cluster会在rook-ceph这个namesapce创建资源<br>
+盯着这个namesapce的pod你就会发现，它在按照顺序创建Pod</p>
+<p>kubectl -n rook-ceph get pod -o wide  -w</p>
+<p>看到所有的pod都Running就行了<br>
+注意看一下pod分布的宿主机，跟我们打标签的主机是一致的</p>
+<p>kubectl -n rook-ceph get pod -o wide<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>切换到其他主机看一下磁盘</p>
+<p>切换到kube-node1<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>切换到kube-node3<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>配置ceph dashboard<br>
+看一眼dashboard在哪个service上<br>
+kubectl -n rook-ceph get service<br>
+可以看到dashboard监听了8443端口<br>
+kubernetes搭建rook-ceph</p>
+<p>创建个nodeport类型的service以便集群外部访问<br>
+kubectl apply -f dashboard-external-https.yaml</p>
+<p>查看一下nodeport在哪个端口<br>
+ss -tanl<br>
+kubectl -n rook-ceph get service<br>
+kubernetes搭建rook-ceph</p>
+<p>找出Dashboard的登陆账号和密码<br>
+MGR_POD=<code>kubectl get pod -n rook-ceph | grep mgr | awk '{print $1}'</code></p>
+<p>kubectl -n rook-ceph logs $MGR_POD | grep password<br>
+kubernetes搭建rook-ceph</p>
+<p>打开浏览器输入任意一个Node的IP+nodeport端口<br>
+这里我的就是：https://192.168.1.2:30290<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>配置ceph为storageclass<br>
+官方给了一个样本文件：storageclass.yaml<br>
+这个文件使用的是 RBD 块存储<br>
+pool创建详解：https://rook.io/docs/rook/v0.8/ceph-pool-crd.html</p>
+<pre><code>apiVersion: ceph.rook.io/v1beta1
+kind: Pool
+metadata:
+  #这个name就是创建成ceph pool之后的pool名字
+  name: replicapool
+  namespace: rook-ceph
+spec:
+  replicated:
+    size: 1
+  # size 池中数据的副本数,1就是不保存任何副本
+  failureDomain: osd
+  #  failureDomain：数据块的故障域，
+  #  值为host时，每个数据块将放置在不同的主机上
+  #  值为osd时，每个数据块将放置在不同的osd上
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: ceph
+   # StorageClass的名字，pvc调用时填的名字
+provisioner: ceph.rook.io/block
+parameters:
+  pool: replicapool
+  # Specify the namespace of the rook cluster from which to create volumes.
+  # If not specified, it will use `rook` as the default namespace of the cluster.
+  # This is also the namespace where the cluster will be
+  clusterNamespace: rook-ceph
+  # Specify the filesystem type of the volume. If not specified, it will use `ext4`.
+  fstype: xfs
+# 设置回收策略默认为：Retain
+reclaimPolicy: Retain
+</code></pre>
+<p>创建StorageClass<br>
+kubectl apply -f storageclass.yaml<br>
+kubectl get storageclasses.storage.k8s.io  -n rook-ceph<br>
+kubectl describe storageclasses.storage.k8s.io  -n rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>创建个nginx pod尝试挂载</p>
+<pre><code>cat &lt;&lt; EOF &gt; nginx.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ceph
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx
+  ports: 
+  - port: 80
+    name: nginx-port
+    targetPort: 80
+    protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /html
+          name: http-file
+      volumes:
+      - name: http-file
+        persistentVolumeClaim:
+          claimName: nginx-pvc
+EOF
+</code></pre>
+<p>kubectl apply -f nginx.yaml<br>
+查看pv,pvc是否创建了<br>
+kubectl get pv,pvc</p>
+<p>看一下nginx这个pod也运行了<br>
+kubectl get pod<br>
+kubernetes搭建rook-ceph</p>
+<p>删除这个pod,看pv是否还存在<br>
+kubectl delete -f nginx.yaml</p>
+<p>kubectl get pv,pvc<br>
+可以看到，pod和pvc都已经被删除了，但是pv还在！！！<br>
+kubernetes搭建rook-ceph</p>
+<p>添加新的OSD进入集群<br>
+这次我们要把node4添加进集群，先打标签<br>
+kubectl label nodes kube-node4 ceph-osd=enabled<br>
+重新编辑cluster.yaml文件<br>
+原来的基础上添加node4的信息</p>
+<p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
+vi cluster.yam<br>
+kubernetes搭建rook-ceph</p>
+<p>apply一下cluster.yaml文件<br>
+kubectl apply -f cluster.yaml</p>
+<p>盯着rook-ceph名称空间,集群会自动添加node4进来</p>
+<p>kubectl -n rook-ceph get pod -o wide -w<br>
+kubectl -n rook-ceph get pod -o wide<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
+<p>去node4节点看一下磁盘<br>
+lsblk<br>
+kubernetes搭建rook-ceph</p>
+<p>再打开dashboard看一眼<br>
+kubernetes搭建rook-ceph</p>
+<p>删除一个节点<br>
+去掉node3的标签<br>
+kubectl label nodes kube-node3 ceph-osd-<br>
+重新编辑cluster.yaml文件<br>
+删除node3的信息</p>
+<p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
+vi cluster.yam<br>
+kubernetes搭建rook-ceph</p>
+<p>apply一下cluster.yaml文件<br>
+kubectl apply -f cluster.yaml</p>
+<p>盯着rook-ceph名称空间</p>
+<p>kubectl -n rook-ceph get pod -o wide -w<br>
+kubectl -n rook-ceph get pod -o wide</p>
+<p>最后记得删除宿主机的/var/lib/rook文件夹<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph<br>
+kubernetes搭建rook-ceph</p>
 ]]></content>
     </entry>
 </feed>
