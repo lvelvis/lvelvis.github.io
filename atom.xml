@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T07:39:37.598Z</updated>
+    <updated>2020-04-30T07:41:17.977Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -18,7 +18,7 @@
         <updated>2020-04-30T07:32:39.000Z</updated>
         <content type="html"><![CDATA[<h3 id="前提">前提</h3>
 <p>由于istio部署到IDC、非云环境无法获取客户端真实IP地址，web应用无法使用该组件，早期版本的istio做了很多测试，最终无法实现获取remote client address；</p>
-<h3 id="环境">环境：</h3>
+<h3 id="环境">环境</h3>
 <p>kubernetes版本：k8s-1.16.9<br>
 istio版本：1.5</p>
 <h3 id="方法">方法</h3>
