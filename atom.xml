@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T09:03:40.268Z</updated>
+    <updated>2020-04-30T09:05:11.590Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -233,10 +233,10 @@ spec:
         <link href="https://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">
         </link>
         <updated>2020-01-20T08:48:40.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="前言">前言</h3>
+        <content type="html"><![CDATA[<h1 id="前言">前言</h1>
 <p>我们通常的开发流程是，在本地开发完成应用之后，使用git作为版本管理工具，将本地代码提交到类似Github这样的仓库中做持久化存储，当我们可能来自多个仓库、可能涉及到多个中间件作为底层依赖一起部署到生产环境中时，相信不少在大中型企业工作的小伙伴都知道公司内部通常会有发布系统，那么云原生技术栈中有没有为我们提供类似的发布系统呢？档案是肯定的，而且不乏竞争者，业内知名的有knavtie Build/jekinsX/spinnaker/orgo/tekton，其中，tekon凭借其众多优良特性在一众竞争者中胜出，成为领域内的事实标准，今天我们就来揭开Tekton的神秘面纱。<br>
 <img src="https://lvelvis.github.io/post-images/1588236885419.png" alt="" loading="lazy"></p>
-<h3 id="正文">正文</h3>
+<h1 id="正文">正文</h1>
 <h2 id="什么是tekton">什么是Tekton</h2>
 <p><img src="https://lvelvis.github.io/post-images/1588236902661.png" alt="" loading="lazy"><br>
 那Tekton都提供了哪些CRD呢？<br>
@@ -284,17 +284,17 @@ TaskRun 主要是负责设置 Task 需要的参数，并通过 taskRef 字段引
 <img src="https://lvelvis.github.io/post-images/1588237189249.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588237194640.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588237221271.png" alt="" loading="lazy"></p>
-<h3 id="实战">实战</h3>
+<h1 id="实战">实战</h1>
 <p>关于Tekton的实战，可以参考Github里面的这个完整的Demo，里面是一个go语言吧编写的web服务，接口可以打印&quot;Hello world&quot;。时间有限，就不做演示了，感兴趣的可以在自己的k8s集群上面跑一下感受一下，相关的yaml文件也可以拷贝下来，作为后面改写的模板。<br>
 准备 PIpeline 的资源<br>
 kubectl apply -f tasks/source-to-image.yaml -f tasks/deploy-using-kubectl.yaml  -f resources/picalc-git.yaml -f image-secret.yaml -f pipeline-account.yaml -f pipeline/build-and-deploy-pipeline.yaml<br>
 执行 create 把 pipelieRun 提交到 Kubernetes 集群。之所以这里使用 create 而不是使用 apply 是因为 PIpelineRun 每次都会创建一个新的，kubectl 的 create 指令会基于 generateName 创建新的 PIpelineRun 资源。<br>
 kubectl create -f run/picalc-pipeline-run.yaml</p>
-<h3 id="总结">总结</h3>
+<h1 id="总结">总结</h1>
 <p>Tekton以K8S为依托，成为云原生领域CI/CD的事实性标准，帮助我们提高云原生环境下的应用构建和部署效率。<br>
 来一张图对全文做一个简单的总结：</p>
 <figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588236724398.png" alt="" loading="lazy"></figure>
-<p>参考资料</p>
+<h1 id="参考资料">参考资料</h1>
 <ol>
 <li><a href="https://cloud.google.com/tekton/">Tekton官网</a></li>
 <li><a href="https://github.com/knative-sample/tekton-knative/tree/b1.0?spm=ata.13261165.0.0.21213a182xyMm5&amp;file=b1.0">Tekton Demo</a></li>
