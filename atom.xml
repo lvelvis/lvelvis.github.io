@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T08:18:30.890Z</updated>
+    <updated>2020-04-30T09:02:46.004Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -225,6 +225,80 @@ spec:
 </code></pre>
 <p>访问界面：<br>
 <img src="https://lvelvis.github.io/post-images/1588153130667.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[kubernetes Tekton-CI/CD 持续集成流水线]]></title>
+        <id>https://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/</id>
+        <link href="https://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">
+        </link>
+        <updated>2020-01-20T08:48:40.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="前言">前言</h3>
+<p>我们通常的开发流程是，在本地开发完成应用之后，使用git作为版本管理工具，将本地代码提交到类似Github这样的仓库中做持久化存储，当我们可能来自多个仓库、可能涉及到多个中间件作为底层依赖一起部署到生产环境中时，相信不少在大中型企业工作的小伙伴都知道公司内部通常会有发布系统，那么云原生技术栈中有没有为我们提供类似的发布系统呢？档案是肯定的，而且不乏竞争者，业内知名的有knavtie Build/jekinsX/spinnaker/orgo/tekton，其中，tekon凭借其众多优良特性在一众竞争者中胜出，成为领域内的事实标准，今天我们就来揭开Tekton的神秘面纱。<br>
+<img src="https://lvelvis.github.io/post-images/1588236885419.png" alt="" loading="lazy"></p>
+<h3 id="正文">正文</h3>
+<h2 id="什么是tekton">什么是Tekton</h2>
+<p><img src="https://lvelvis.github.io/post-images/1588236902661.png" alt="" loading="lazy"><br>
+那Tekton都提供了哪些CRD呢？<br>
+•	Task：顾名思义，task表示一个构建任务，task里可以定义一系列的steps，例如编译代码、构建镜像、推送镜像等，每个step实际由一个Pod执行。<br>
+•	TaskRun：task只是定义了一个模版，taskRun才真正代表了一次实际的运行，当然你也可以自己手动创建一个taskRun，taskRun创建出来之后，就会自动触发task描述的构建任务。<br>
+•	Pipeline：一个或多个task、PipelineResource以及各种定义参数的集合。<br>
+•	PipelineRun：类似task和taskRun的关系，pipelineRun也表示某一次实际运行的pipeline，下发一个pipelineRun CRD实例到kubernetes后，同样也会触发一次pipeline的构建。<br>
+•	PipelineResource：表示pipeline input资源，比如github上的源码，或者pipeline output资源，例如一个容器镜像或者构建生成的jar包等。<br>
+他们大概有如下图所示的关系：<br>
+官方介绍：</p>
+<pre><code>Tekton 是一个功能强大且灵活的 Kubernetes 原生开源框架，用于创建持续集成和交付（CI/CD）系统。通过抽象底层实现细节，用户可以跨多云平台和本地系统进行构建、测试和部署。
+</code></pre>
+<pre><code>个人理解：
+•	以yaml文件编排应用构建及部署流程
+•	knavtive build模块升级版，社区最终采用 Tekton 替代 knavtive Build作为云原生领域的CI/CD 解决方案
+•	标准化CI/CD流水线构建、测试及部署流程的工具
+</code></pre>
+<p>Tekton在一众竞争对手的比拼中PK胜出：<br>
+<img src="https://lvelvis.github.io/post-images/1588236947460.png" alt="" loading="lazy"></p>
+<p>下面就让我们一起来深入详细了解下Tekton到底怎么玩。<br>
+Tekton Pipeline中有5类对象，核心理念是通过定义yaml定义构建过程。<br>
+•	Task：一个任务的执行模板，用于描述单个任务的构建过程<br>
+•	TaskRun：需要通过定义TaskRun任务去运行Task。<br>
+•	Pipeline：包含多个Task,并在此基础上定义input和output,input和output以PipelineResource作为交付。<br>
+•	PipelineRun：需要定义PipelineRun才会运行Pipeline。<br>
+•	PipelineResource：可用于input和output的对象集合。</p>
+<h2 id="task">Task</h2>
+<p>Task 就是一个任务执行模板，之所以说 Task 是一个模板是因为 Task 定义中可以包含变量，Task 在真正执行的时候需要给定变量的具体值。如果把 Tekton 的 Task 有点儿类似于定义一个函数，Task 通过 inputs.params 定义需要哪些入参，并且每一个入参还可以指定默认值。Task 的 steps 字段表示当前 Task 是有哪些步骤组成的，每一个步骤具体就是基于镜像启动一个 container 执行一些操作，container 的启动参数可以通过 Task 的入参使用模板语法进行配置。下面是一个Demo：<br>
+<img src="https://lvelvis.github.io/post-images/1588236983683.png" alt="" loading="lazy"></p>
+<h2 id="taskrun">TaskRun</h2>
+<p>Task 定义好以后是不能执行的，就像一个函数定义好以后需要调用才能执行一样。所以需要再定义一个 TaskRun 去执行 Task。<br>
+TaskRun 主要是负责设置 Task 需要的参数，并通过 taskRef 字段引用要执行的 Task。下面是一个Demo：<br>
+<img src="https://lvelvis.github.io/post-images/1588237005091.png" alt="" loading="lazy"></p>
+<p>但是在实际使用过程中，我们一般很少使用TaskRun，因为它只能给不一个Task 传参，Tekton提供了给多个Task同时传参的解决方案Pipeline和PipelineRun，且看下文详解，这里只是多嘴一下，这个TaskRun很少使用，稍微了解下就可以了。</p>
+<h2 id="pipeline">Pipeline</h2>
+<p>一个 TaskRun 只能执行一个 Task，当需要编排多个 Task 的时候就需要 Pipeline 出马了。Pipeline 是一个编排 Task 的模板。Pipeline 的 params 声明了执行时需要的入参。 Pipeline 的 spec.tasks 定义了需要编排的 Task。Tasks 是一个数组，数组中的 task 并不是通过数组声明的顺序去执行的，而是通过 runAfter 来声明 task 执行的顺序。Tekton controller 在解析 CRD 的时候会解析 Task 的顺序，然后根据 runAfter 设置生成的依次树依次去执行。Pipeline 在编排 Task 的时候需要给每一个 Task 传入必须的参数，这些参数的值可以来自 Pipeline 自身的 params 设置。下面是一个Demo：<br>
+<img src="https://lvelvis.github.io/post-images/1588237033509.png" alt="" loading="lazy"><br>
+<img src="https://lvelvis.github.io/post-images/1588237113343.png" alt="" loading="lazy"></p>
+<h2 id="pipelinerun">PipelineRun</h2>
+<p>和 Task 一样 Pipeline 定义完成以后也是不能直接执行的，需要 PipelineRun 才能执行 Pipeline。PipelineRun 的主要作用是给 Pipeline 传入必要的入参，并执行 Pipeline。下面是一个Demo：<br>
+<img src="https://lvelvis.github.io/post-images/1588237145814.png" alt="" loading="lazy"><br>
+<img src="https://lvelvis.github.io/post-images/1588237151158.png" alt="" loading="lazy"></p>
+<h2 id="pipelineresource">PipelineResource</h2>
+<p>可能你还想在 Task 之间共享资源，这就是 PipelineResource 的作用。比如我们可以把 git 仓库信息放在 PipelineResource 中。这样所有 Task 就可以共享这些信息了。<br>
+<img src="https://lvelvis.github.io/post-images/1588237189249.png" alt="" loading="lazy"><br>
+<img src="https://lvelvis.github.io/post-images/1588237194640.png" alt="" loading="lazy"><br>
+<img src="https://lvelvis.github.io/post-images/1588237221271.png" alt="" loading="lazy"></p>
+<h3 id="实战">实战</h3>
+<p>关于Tekton的实战，可以参考Github里面的这个完整的Demo，里面是一个go语言吧编写的web服务，接口可以打印&quot;Hello world&quot;。时间有限，就不做演示了，感兴趣的可以在自己的k8s集群上面跑一下感受一下，相关的yaml文件也可以拷贝下来，作为后面改写的模板。<br>
+准备 PIpeline 的资源<br>
+kubectl apply -f tasks/source-to-image.yaml -f tasks/deploy-using-kubectl.yaml  -f resources/picalc-git.yaml -f image-secret.yaml -f pipeline-account.yaml -f pipeline/build-and-deploy-pipeline.yaml<br>
+执行 create 把 pipelieRun 提交到 Kubernetes 集群。之所以这里使用 create 而不是使用 apply 是因为 PIpelineRun 每次都会创建一个新的，kubectl 的 create 指令会基于 generateName 创建新的 PIpelineRun 资源。<br>
+kubectl create -f run/picalc-pipeline-run.yaml</p>
+<h3 id="总结">总结</h3>
+<p>Tekton以K8S为依托，成为云原生领域CI/CD的事实性标准，帮助我们提高云原生环境下的应用构建和部署效率。<br>
+来一张图对全文做一个简单的总结：</p>
+<figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588236724398.png" alt="" loading="lazy"></figure>
+<p>参考资料</p>
+<ol>
+<li><a href="https://cloud.google.com/tekton/">Tekton官网</a></li>
+<li><a href="https://github.com/knative-sample/tekton-knative/tree/b1.0?spm=ata.13261165.0.0.21213a182xyMm5&amp;file=b1.0">Tekton Demo</a></li>
+</ol>
 ]]></content>
     </entry>
     <entry>
