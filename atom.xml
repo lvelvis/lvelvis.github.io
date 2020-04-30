@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T09:14:05.789Z</updated>
+    <updated>2020-04-30T09:21:55.953Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -49,7 +49,7 @@ Persistent Volumes</p>
 <p>由于repo在线安装太慢，建议下载char本地修改参数后安装</p>
 <pre><code>git clone https://github.com/elastic/helm-charts.git
 </code></pre>
-<h1 id="部署-es">部署 ES</h1>
+<h1 id="部署-elk">部署 ELK</h1>
 <h2 id="创建elk命名空间">创建elk命名空间</h2>
 <pre><code>#cat elk-ns.yml
 apiVersion: v1
@@ -307,14 +307,14 @@ kubectl create -f run/picalc-pipeline-run.yaml</p>
         <link href="https://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
         </link>
         <updated>2018-12-11T16:00:00.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="简介">简介</h3>
+        <content type="html"><![CDATA[<h1 id="简介">简介</h1>
 <p>Rook官网：https://rook.io<br>
 Rook是云原生计算基金会(CNCF)的孵化级项目.<br>
 Rook是Kubernetes的开源云本地存储协调器，为各种存储解决方案提供平台，框架和支持，以便与云原生环境本地集成。<br>
 至于CEPH，官网在这：https://ceph.com/<br>
 ceph官方提供的helm部署，至今我没成功过，所以转向使用rook提供的方案<br>
 有道笔记原文：http://note.youdao.com/noteshare?id=281719f1f0374f787effc90067e0d5ad&amp;sub=0B59EA339D4A4769B55F008D72C1A4C0</p>
-<h3 id="环境">环境</h3>
+<h1 id="环境">环境</h1>
 <pre><code>centos 7.5
 kernel 4.18.7-1.el7.elrepo.x86_64
 docker 18.06
@@ -333,7 +333,7 @@ kubernetes v1.12.2
 kubernetes搭建rook-ceph
 </code></pre>
 <figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588233297037.png" alt="" loading="lazy"></figure>
-<h3 id="准备工作">准备工作</h3>
+<h1 id="准备工作">准备工作</h1>
 <p>所有节点开启ip_forward</p>
 <pre><code>cat &lt;&lt;EOF &gt;  /etc/sysctl.d/ceph.conf
 net.ipv4.ip_forward = 1
@@ -342,8 +342,8 @@ net.bridge.bridge-nf-call-iptables = 1
 EOF
 </code></pre>
 <p>sysctl -p</p>
-<h3 id="开始部署operator">开始部署Operator</h3>
-<h4 id="部署rook-operator">部署Rook Operator</h4>
+<h1 id="开始部署operator">开始部署Operator</h1>
+<h2 id="部署rook-operator">部署Rook Operator</h2>
 <pre><code>cd $HOME
 git clone https://github.com/rook/rook.git
 
@@ -352,12 +352,12 @@ cd cluster/examples/kubernetes/ceph
 kubectl apply -f operator.yaml
 </code></pre>
 <figure data-type="image" tabindex="2"><img src="https://lvelvis.github.io/post-images/1588233371696.png" alt="" loading="lazy"></figure>
-<h4 id="查看operator的状态">查看Operator的状态</h4>
+<h2 id="查看operator的状态">查看Operator的状态</h2>
 <p>执行apply之后稍等一会<br>
 operator会在集群内的每个主机创建两个pod:rook-discover,rook-ceph-agent</p>
 <p>kubectl -n rook-ceph-system get pod -o wide<br>
 <img src="https://lvelvis.github.io/post-images/1588233523024.png" alt="" loading="lazy"></p>
-<h3 id="给节点打标签">给节点打标签</h3>
+<h2 id="给节点打标签">给节点打标签</h2>
 <p>运行ceph-mon的节点打上：ceph-mon=enabled<br>
 kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-mon=enabled<br>
 运行ceph-osd的节点，也就是存储节点，打上：ceph-osd=enabled<br>
@@ -365,7 +365,7 @@ kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-osd=enabled<br>
 运行ceph-mgr的节点，打上：ceph-mgr=enabled<br>
 mgr只能支持一个节点运行，这是ceph跑k8s里的局限<br>
 kubectl label nodes kube-node1 ceph-mgr=enabled</p>
-<h3 id="配置clusteryaml文件">配置cluster.yaml文件</h3>
+<h2 id="配置clusteryaml文件">配置cluster.yaml文件</h2>
 <p>官方配置文件详解：https://rook.io/docs/rook/v0.8/ceph-cluster-crd.html<br>
 文件中有几个地方要注意：</p>
 <ul>
@@ -578,7 +578,7 @@ spec:
 #    - name: &quot;172.17.4.301&quot;
 #      deviceFilter: &quot;^sd.&quot;
 </code></pre>
-<h3 id="开始部署ceph">开始部署ceph</h3>
+<h2 id="开始部署ceph">开始部署ceph</h2>
 <p>部署ceph<br>
 kubectl apply -f cluster.yaml<br>
 cluster会在rook-ceph这个namesapce创建资源<br>
@@ -590,7 +590,7 @@ kubectl -n rook-ceph get pod -o wide<br>
 <p>切换到kube-node1<br>
 lsblk<br>
 <img src="https://lvelvis.github.io/post-images/1588233803458.png" alt="" loading="lazy"></p>
-<h3 id="配置ceph-dashboard">配置ceph dashboard</h3>
+<h2 id="配置ceph-dashboard">配置ceph dashboard</h2>
 <p>看一眼dashboard在哪个service上<br>
 kubectl -n rook-ceph get service<br>
 可以看到dashboard监听了8443端口<br>
@@ -608,7 +608,7 @@ kubectl -n rook-ceph logs $MGR_POD | grep password<br>
 这里我的就是：https://192.168.1.2:30290<br>
 <img src="https://lvelvis.github.io/post-images/1588234024005.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588234065656.png" alt="" loading="lazy"></p>
-<h3 id="配置ceph为storageclass">配置ceph为storageclass</h3>
+<h2 id="配置ceph为storageclass">配置ceph为storageclass</h2>
 <p>官方给了一个样本文件：storageclass.yaml<br>
 这个文件使用的是 RBD 块存储<br>
 pool创建详解：https://rook.io/docs/rook/v0.8/ceph-pool-crd.html</p>
@@ -644,7 +644,7 @@ parameters:
 # 设置回收策略默认为：Retain
 reclaimPolicy: Retain
 </code></pre>
-<h3 id="创建storageclass">创建StorageClass</h3>
+<h2 id="创建storageclass">创建StorageClass</h2>
 <p>kubectl apply -f storageclass.yaml<br>
 kubectl get storageclasses.storage.k8s.io  -n rook-ceph<br>
 kubectl describe storageclasses.storage.k8s.io  -n rook-ceph<br>
@@ -717,7 +717,7 @@ kubectl get pod</p>
 kubectl delete -f nginx.yaml</p>
 <p>kubectl get pv,pvc<br>
 可以看到，pod和pvc都已经被删除了，但是pv还在！！！</p>
-<h3 id="添加新节点进入集群">添加新节点进入集群</h3>
+<h2 id="添加新节点进入集群">添加新节点进入集群</h2>
 <p>这次我们要把node4添加进集群，先打标签<br>
 kubectl label nodes kube-node4 ceph-osd=enabled<br>
 重新编辑cluster.yaml文件<br>
@@ -735,7 +735,7 @@ kubectl -n rook-ceph get pod -o wide<br>
 去node4节点看一下磁盘<br>
 lsblk<br>
 <img src="https://lvelvis.github.io/post-images/1588234334204.png" alt="" loading="lazy"></p>
-<h3 id="删除一个节点">删除一个节点</h3>
+<h2 id="删除一个节点">删除一个节点</h2>
 <p>去掉node3的标签<br>
 kubectl label nodes kube-node3 ceph-osd-<br>
 重新编辑cluster.yaml文件<br>
