@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T07:28:34.158Z</updated>
+    <updated>2020-04-30T07:30:03.281Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -51,8 +51,8 @@ server.host: &quot;0&quot;
 elasticsearch.hosts: [ &quot;http://elasticsearch:9200&quot; ]
 xpack.monitoring.ui.container.elasticsearch.enabled: true
 </code></pre>
-<p>###Kibana 添加 Ingress<br>
-通过 Ingress 添加访问入口</p>
+<h3 id="kibana-添加-ingress">Kibana 添加 Ingress</h3>
+<p>通过 Ingress 添加访问入口</p>
 <pre><code>apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -72,8 +72,8 @@ spec:
     ingress:
     - ip: &lt;YourLoadBalancerIP&gt;  ## LB 的 IP
 </code></pre>
-<p>###访问测试<br>
-访问域名，即可打开 Kibana 7.3 版本；</p>
+<h3 id="访问测试">访问测试</h3>
+<p>访问域名，即可打开 Kibana 7.3 版本；</p>
 <figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
 <p>查看集群的运行状态</p>
 <figure data-type="image" tabindex="2"><img src="https://lvelvis.github.io/post-images/1588231313286.jpg" alt="" loading="lazy"></figure>
