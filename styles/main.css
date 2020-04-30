@@ -2212,7 +2212,7 @@ body {
  }
 body {
      background: rgba(12, 100, 129, 1) url('https://images.cnblogs.com/cnblogs_com/lvcisco/1388799/o_3.jpg') fixed no-repeat;
-     //background: rgba(12, 100, 129, 1) url('https://www.cnblogs.com/images/cnblogs_com/lvcisco/1388799/o_2.jpg') fixed no-repeat;
+     //background: rgba(12, 100, 129, 1) url('https://img.alicdn.com/imgextra/i1/590304537/O1CN01NFyIiT1jNzY3tx71r_!!590304537.jpg') fixed no-repeat;
      background-position: 50% 5%; 
      background-size: cover;
  }
@@ -2282,7 +2282,7 @@ body {
  }
  /*文章附加信息*/
  .postDesc {   
-     background: url(https://images.cnblogs.com/cnblogs_com/lvcisco/1388799/o_2.jpg) no-repeat 0 1px;
+     background: url('https://img.alicdn.com/imgextra/i1/590304537/O1CN01NFyIiT1jNzY3tx71r_!!590304537.jpg') no-repeat 0 1px;
      color: #757575;
      float: left;
      width: 100%;
