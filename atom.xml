@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-04-30T09:05:11.590Z</updated>
+    <updated>2020-04-30T09:11:25.802Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://lvelvis.github.io"/>
     <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
@@ -40,17 +40,17 @@ istio版本：1.5</p>
         <link href="https://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">
         </link>
         <updated>2020-04-30T07:12:33.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="前提">前提：</h3>
+        <content type="html"><![CDATA[<h1 id="前提">前提：</h1>
 <p>在kubernetes集群中部署elk组件，es集群部署3个节点，kibana部署一个，容器数据持久化需要storageclass</p>
 <p>依赖：<br>
 Helm<br>
 Persistent Volumes</p>
-<h3 id="准备配置">准备配置</h3>
+<h1 id="准备配置">准备配置</h1>
 <p>由于repo在线安装太慢，建议下载char本地修改参数后安装</p>
 <pre><code>git clone https://github.com/elastic/helm-charts.git
 </code></pre>
-<h3 id="部署-es">部署 ES</h3>
-<p>####创建elk命名空间</p>
+<h1 id="部署-es">部署 ES</h1>
+<h3 id="创建elk命名空间">创建elk命名空间</h3>
 <pre><code>#cat elk-ns.yml
 apiVersion: v1
 kind: Namespace
@@ -64,7 +64,7 @@ metadata:
 <p>cd helm-charts/kibana</p>
 <p>helm install --namespace=elk --name=kibana .<br>
 通过 kubectl get deploy 和 pod 了解部署状态；</p>
-<h3 id="小知识">小知识</h3>
+<h1 id="小知识">小知识</h1>
 <p>Kibana 直接通过 K8S 内部 DNS 域名 访问 ES。</p>
 <p>查看容器内的配置</p>
 <pre><code>kubectl  exec kibana-kibana-7cbc5db55c-6qct7 -c kibana -- cat /usr/share/kibana/config/kibana.yml
@@ -75,7 +75,7 @@ server.host: &quot;0&quot;
 elasticsearch.hosts: [ &quot;http://elasticsearch:9200&quot; ]
 xpack.monitoring.ui.container.elasticsearch.enabled: true
 </code></pre>
-<h3 id="kibana-添加-ingress">Kibana 添加 Ingress</h3>
+<h1 id="kibana-添加-ingress">Kibana 添加 Ingress</h1>
 <p>通过 Ingress 添加访问入口</p>
 <pre><code>apiVersion: extensions/v1beta1
 kind: Ingress
@@ -96,7 +96,7 @@ spec:
     ingress:
     - ip: &lt;YourLoadBalancerIP&gt;  ## LB 的 IP
 </code></pre>
-<h3 id="访问测试">访问测试</h3>
+<h1 id="访问测试">访问测试</h1>
 <p>访问域名，即可打开 Kibana 7.3 版本；</p>
 <figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
 <p>查看集群的运行状态</p>
@@ -237,7 +237,7 @@ spec:
 <p>我们通常的开发流程是，在本地开发完成应用之后，使用git作为版本管理工具，将本地代码提交到类似Github这样的仓库中做持久化存储，当我们可能来自多个仓库、可能涉及到多个中间件作为底层依赖一起部署到生产环境中时，相信不少在大中型企业工作的小伙伴都知道公司内部通常会有发布系统，那么云原生技术栈中有没有为我们提供类似的发布系统呢？档案是肯定的，而且不乏竞争者，业内知名的有knavtie Build/jekinsX/spinnaker/orgo/tekton，其中，tekon凭借其众多优良特性在一众竞争者中胜出，成为领域内的事实标准，今天我们就来揭开Tekton的神秘面纱。<br>
 <img src="https://lvelvis.github.io/post-images/1588236885419.png" alt="" loading="lazy"></p>
 <h1 id="正文">正文</h1>
-<h2 id="什么是tekton">什么是Tekton</h2>
+<h3 id="什么是tekton">什么是Tekton</h3>
 <p><img src="https://lvelvis.github.io/post-images/1588236902661.png" alt="" loading="lazy"><br>
 那Tekton都提供了哪些CRD呢？<br>
 •	Task：顾名思义，task表示一个构建任务，task里可以定义一系列的steps，例如编译代码、构建镜像、推送镜像等，每个step实际由一个Pod执行。<br>
@@ -263,23 +263,23 @@ Tekton Pipeline中有5类对象，核心理念是通过定义yaml定义构建过
 •	Pipeline：包含多个Task,并在此基础上定义input和output,input和output以PipelineResource作为交付。<br>
 •	PipelineRun：需要定义PipelineRun才会运行Pipeline。<br>
 •	PipelineResource：可用于input和output的对象集合。</p>
-<h2 id="task">Task</h2>
+<h3 id="task">Task</h3>
 <p>Task 就是一个任务执行模板，之所以说 Task 是一个模板是因为 Task 定义中可以包含变量，Task 在真正执行的时候需要给定变量的具体值。如果把 Tekton 的 Task 有点儿类似于定义一个函数，Task 通过 inputs.params 定义需要哪些入参，并且每一个入参还可以指定默认值。Task 的 steps 字段表示当前 Task 是有哪些步骤组成的，每一个步骤具体就是基于镜像启动一个 container 执行一些操作，container 的启动参数可以通过 Task 的入参使用模板语法进行配置。下面是一个Demo：<br>
 <img src="https://lvelvis.github.io/post-images/1588236983683.png" alt="" loading="lazy"></p>
-<h2 id="taskrun">TaskRun</h2>
+<h3 id="taskrun">TaskRun</h3>
 <p>Task 定义好以后是不能执行的，就像一个函数定义好以后需要调用才能执行一样。所以需要再定义一个 TaskRun 去执行 Task。<br>
 TaskRun 主要是负责设置 Task 需要的参数，并通过 taskRef 字段引用要执行的 Task。下面是一个Demo：<br>
 <img src="https://lvelvis.github.io/post-images/1588237005091.png" alt="" loading="lazy"></p>
 <p>但是在实际使用过程中，我们一般很少使用TaskRun，因为它只能给不一个Task 传参，Tekton提供了给多个Task同时传参的解决方案Pipeline和PipelineRun，且看下文详解，这里只是多嘴一下，这个TaskRun很少使用，稍微了解下就可以了。</p>
-<h2 id="pipeline">Pipeline</h2>
+<h3 id="pipeline">Pipeline</h3>
 <p>一个 TaskRun 只能执行一个 Task，当需要编排多个 Task 的时候就需要 Pipeline 出马了。Pipeline 是一个编排 Task 的模板。Pipeline 的 params 声明了执行时需要的入参。 Pipeline 的 spec.tasks 定义了需要编排的 Task。Tasks 是一个数组，数组中的 task 并不是通过数组声明的顺序去执行的，而是通过 runAfter 来声明 task 执行的顺序。Tekton controller 在解析 CRD 的时候会解析 Task 的顺序，然后根据 runAfter 设置生成的依次树依次去执行。Pipeline 在编排 Task 的时候需要给每一个 Task 传入必须的参数，这些参数的值可以来自 Pipeline 自身的 params 设置。下面是一个Demo：<br>
 <img src="https://lvelvis.github.io/post-images/1588237033509.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588237113343.png" alt="" loading="lazy"></p>
-<h2 id="pipelinerun">PipelineRun</h2>
+<h3 id="pipelinerun">PipelineRun</h3>
 <p>和 Task 一样 Pipeline 定义完成以后也是不能直接执行的，需要 PipelineRun 才能执行 Pipeline。PipelineRun 的主要作用是给 Pipeline 传入必要的入参，并执行 Pipeline。下面是一个Demo：<br>
 <img src="https://lvelvis.github.io/post-images/1588237145814.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588237151158.png" alt="" loading="lazy"></p>
-<h2 id="pipelineresource">PipelineResource</h2>
+<h3 id="pipelineresource">PipelineResource</h3>
 <p>可能你还想在 Task 之间共享资源，这就是 PipelineResource 的作用。比如我们可以把 git 仓库信息放在 PipelineResource 中。这样所有 Task 就可以共享这些信息了。<br>
 <img src="https://lvelvis.github.io/post-images/1588237189249.png" alt="" loading="lazy"><br>
 <img src="https://lvelvis.github.io/post-images/1588237194640.png" alt="" loading="lazy"><br>
