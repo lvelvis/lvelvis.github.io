@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://lvelvis.github.io</id>
+    <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-01T03:51:33.175Z</updated>
+    <updated>2020-05-01T03:55:01.870Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://lvelvis.github.io"/>
-    <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
+    <link rel="alternate" href="http://lvelvis.github.io"/>
+    <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
     <subtitle>时光,浓淡相宜;人心,远近相安;这就是最好的生活</subtitle>
-    <logo>https://lvelvis.github.io/images/avatar.png</logo>
-    <icon>https://lvelvis.github.io/favicon.ico</icon>
+    <logo>http://lvelvis.github.io/images/avatar.png</logo>
+    <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
     <entry>
         <title type="html"><![CDATA[istio-客户端源地址如何显示]]></title>
-        <id>https://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/</id>
-        <link href="https://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/">
+        <id>http://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/</id>
+        <link href="http://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/">
         </link>
         <updated>2020-04-30T07:32:39.000Z</updated>
         <content type="html"><![CDATA[<h3 id="前提">前提</h3>
@@ -29,15 +29,15 @@ istio版本：1.5</p>
           value: &quot;true&quot;
 </code></pre>
 <p>以下是github相应的issue<br>
-<img src="https://lvelvis.github.io/post-images/1588232244321.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588232244321.png" alt="" loading="lazy"></p>
 <h3 id="其他测试">其他测试</h3>
 <p>istio-1.5版本回归单体，各个组件优化了很多，后期测试http链接与tcp链接应用</p>
 ]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[K8S通过helm 部署 ELK 7.3]]></title>
-        <id>https://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/</id>
-        <link href="https://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">
+        <id>http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/</id>
+        <link href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">
         </link>
         <updated>2020-04-30T07:12:33.000Z</updated>
         <content type="html"><![CDATA[<h1 id="前提">前提：</h1>
@@ -98,9 +98,9 @@ spec:
 </code></pre>
 <h1 id="访问测试">访问测试</h1>
 <p>访问域名，即可打开 Kibana 7.3 版本；</p>
-<figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
 <p>查看集群的运行状态</p>
-<figure data-type="image" tabindex="2"><img src="https://lvelvis.github.io/post-images/1588231313286.jpg" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="http://lvelvis.github.io/post-images/1588231313286.jpg" alt="" loading="lazy"></figure>
 <p>也可以通过命令行查看</p>
 <pre><code>~$ curl  -s &lt;YourESHost&gt;/_cluster/health | jq .
 {
@@ -125,15 +125,15 @@ spec:
     </entry>
     <entry>
         <title type="html"><![CDATA[kubesphere安装使用体验]]></title>
-        <id>https://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/</id>
-        <link href="https://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/">
+        <id>http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/</id>
+        <link href="http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/">
         </link>
         <updated>2020-04-29T09:33:05.000Z</updated>
         <content type="html"><![CDATA[<p>最近又出来个kubesphere的工具用来管理k8s，今天特意来安装体验下；<br>
 github地址：https://github.com/pixiake/ks-installer</p>
 <p>官方使用文档：https://kubesphere.io/docs/advanced-v2.0/zh-CN/installation/all-in-one/</p>
 <p>先放上安装效果图，UI界面还是很清爽的：<br>
-<img src="https://lvelvis.github.io/post-images/1588152934567.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588152934567.png" alt="" loading="lazy"></p>
 <h3 id="当前环境">当前环境：</h3>
 <pre><code>k8s集群已经安装完成，用kubesphere管理现有的k8s集群；
 
@@ -224,21 +224,21 @@ spec:
           servicePort: 80
 </code></pre>
 <p>访问界面：<br>
-<img src="https://lvelvis.github.io/post-images/1588153130667.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588153130667.png" alt="" loading="lazy"></p>
 ]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[kubernetes Tekton-CI/CD 持续集成流水线]]></title>
-        <id>https://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/</id>
-        <link href="https://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">
+        <id>http://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/</id>
+        <link href="http://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">
         </link>
         <updated>2020-01-20T08:48:40.000Z</updated>
         <content type="html"><![CDATA[<h1 id="前言">前言</h1>
 <p>我们通常的开发流程是，在本地开发完成应用之后，使用git作为版本管理工具，将本地代码提交到类似Github这样的仓库中做持久化存储，当我们可能来自多个仓库、可能涉及到多个中间件作为底层依赖一起部署到生产环境中时，相信不少在大中型企业工作的小伙伴都知道公司内部通常会有发布系统，那么云原生技术栈中有没有为我们提供类似的发布系统呢？档案是肯定的，而且不乏竞争者，业内知名的有knavtie Build/jekinsX/spinnaker/orgo/tekton，其中，tekon凭借其众多优良特性在一众竞争者中胜出，成为领域内的事实标准，今天我们就来揭开Tekton的神秘面纱。<br>
-<img src="https://lvelvis.github.io/post-images/1588236885419.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588236885419.png" alt="" loading="lazy"></p>
 <h1 id="正文">正文</h1>
 <h3 id="什么是tekton">什么是Tekton</h3>
-<p><img src="https://lvelvis.github.io/post-images/1588236902661.png" alt="" loading="lazy"><br>
+<p><img src="http://lvelvis.github.io/post-images/1588236902661.png" alt="" loading="lazy"><br>
 那Tekton都提供了哪些CRD呢？<br>
 •	Task：顾名思义，task表示一个构建任务，task里可以定义一系列的steps，例如编译代码、构建镜像、推送镜像等，每个step实际由一个Pod执行。<br>
 •	TaskRun：task只是定义了一个模版，taskRun才真正代表了一次实际的运行，当然你也可以自己手动创建一个taskRun，taskRun创建出来之后，就会自动触发task描述的构建任务。<br>
@@ -255,7 +255,7 @@ spec:
 •	标准化CI/CD流水线构建、测试及部署流程的工具
 </code></pre>
 <p>Tekton在一众竞争对手的比拼中PK胜出：<br>
-<img src="https://lvelvis.github.io/post-images/1588236947460.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588236947460.png" alt="" loading="lazy"></p>
 <p>下面就让我们一起来深入详细了解下Tekton到底怎么玩。<br>
 Tekton Pipeline中有5类对象，核心理念是通过定义yaml定义构建过程。<br>
 •	Task：一个任务的执行模板，用于描述单个任务的构建过程<br>
@@ -265,25 +265,25 @@ Tekton Pipeline中有5类对象，核心理念是通过定义yaml定义构建过
 •	PipelineResource：可用于input和output的对象集合。</p>
 <h3 id="task">Task</h3>
 <p>Task 就是一个任务执行模板，之所以说 Task 是一个模板是因为 Task 定义中可以包含变量，Task 在真正执行的时候需要给定变量的具体值。如果把 Tekton 的 Task 有点儿类似于定义一个函数，Task 通过 inputs.params 定义需要哪些入参，并且每一个入参还可以指定默认值。Task 的 steps 字段表示当前 Task 是有哪些步骤组成的，每一个步骤具体就是基于镜像启动一个 container 执行一些操作，container 的启动参数可以通过 Task 的入参使用模板语法进行配置。下面是一个Demo：<br>
-<img src="https://lvelvis.github.io/post-images/1588236983683.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588236983683.png" alt="" loading="lazy"></p>
 <h3 id="taskrun">TaskRun</h3>
 <p>Task 定义好以后是不能执行的，就像一个函数定义好以后需要调用才能执行一样。所以需要再定义一个 TaskRun 去执行 Task。<br>
 TaskRun 主要是负责设置 Task 需要的参数，并通过 taskRef 字段引用要执行的 Task。下面是一个Demo：<br>
-<img src="https://lvelvis.github.io/post-images/1588237005091.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588237005091.png" alt="" loading="lazy"></p>
 <p>但是在实际使用过程中，我们一般很少使用TaskRun，因为它只能给不一个Task 传参，Tekton提供了给多个Task同时传参的解决方案Pipeline和PipelineRun，且看下文详解，这里只是多嘴一下，这个TaskRun很少使用，稍微了解下就可以了。</p>
 <h3 id="pipeline">Pipeline</h3>
 <p>一个 TaskRun 只能执行一个 Task，当需要编排多个 Task 的时候就需要 Pipeline 出马了。Pipeline 是一个编排 Task 的模板。Pipeline 的 params 声明了执行时需要的入参。 Pipeline 的 spec.tasks 定义了需要编排的 Task。Tasks 是一个数组，数组中的 task 并不是通过数组声明的顺序去执行的，而是通过 runAfter 来声明 task 执行的顺序。Tekton controller 在解析 CRD 的时候会解析 Task 的顺序，然后根据 runAfter 设置生成的依次树依次去执行。Pipeline 在编排 Task 的时候需要给每一个 Task 传入必须的参数，这些参数的值可以来自 Pipeline 自身的 params 设置。下面是一个Demo：<br>
-<img src="https://lvelvis.github.io/post-images/1588237033509.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588237113343.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588237033509.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588237113343.png" alt="" loading="lazy"></p>
 <h3 id="pipelinerun">PipelineRun</h3>
 <p>和 Task 一样 Pipeline 定义完成以后也是不能直接执行的，需要 PipelineRun 才能执行 Pipeline。PipelineRun 的主要作用是给 Pipeline 传入必要的入参，并执行 Pipeline。下面是一个Demo：<br>
-<img src="https://lvelvis.github.io/post-images/1588237145814.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588237151158.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588237145814.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588237151158.png" alt="" loading="lazy"></p>
 <h3 id="pipelineresource">PipelineResource</h3>
 <p>可能你还想在 Task 之间共享资源，这就是 PipelineResource 的作用。比如我们可以把 git 仓库信息放在 PipelineResource 中。这样所有 Task 就可以共享这些信息了。<br>
-<img src="https://lvelvis.github.io/post-images/1588237189249.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588237194640.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588237221271.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588237189249.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588237194640.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588237221271.png" alt="" loading="lazy"></p>
 <h1 id="实战">实战</h1>
 <p>关于Tekton的实战，可以参考Github里面的这个完整的Demo，里面是一个go语言吧编写的web服务，接口可以打印&quot;Hello world&quot;。时间有限，就不做演示了，感兴趣的可以在自己的k8s集群上面跑一下感受一下，相关的yaml文件也可以拷贝下来，作为后面改写的模板。<br>
 准备 PIpeline 的资源<br>
@@ -293,7 +293,7 @@ kubectl create -f run/picalc-pipeline-run.yaml</p>
 <h1 id="总结">总结</h1>
 <p>Tekton以K8S为依托，成为云原生领域CI/CD的事实性标准，帮助我们提高云原生环境下的应用构建和部署效率。<br>
 来一张图对全文做一个简单的总结：</p>
-<figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588236724398.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588236724398.png" alt="" loading="lazy"></figure>
 <h1 id="参考资料">参考资料</h1>
 <ol>
 <li><a href="https://cloud.google.com/tekton/">Tekton官网</a></li>
@@ -303,8 +303,8 @@ kubectl create -f run/picalc-pipeline-run.yaml</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[kubernetes搭建rook-ceph]]></title>
-        <id>https://lvelvis.github.io/post/kubernetes搭建rook-ceph/</id>
-        <link href="https://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
+        <id>http://lvelvis.github.io/post/kubernetes搭建rook-ceph/</id>
+        <link href="http://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
         </link>
         <updated>2019-12-11T16:00:00.000Z</updated>
         <content type="html"><![CDATA[<h1 id="简介">简介</h1>
@@ -332,7 +332,7 @@ kubernetes v1.12.2
 所有node节点准备一块200G的磁盘：/dev/sdb
 kubernetes搭建rook-ceph
 </code></pre>
-<figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1588233297037.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588233297037.png" alt="" loading="lazy"></figure>
 <h1 id="准备工作">准备工作</h1>
 <p>所有节点开启ip_forward</p>
 <pre><code>cat &lt;&lt;EOF &gt;  /etc/sysctl.d/ceph.conf
@@ -351,12 +351,12 @@ cd rook
 cd cluster/examples/kubernetes/ceph
 kubectl apply -f operator.yaml
 </code></pre>
-<figure data-type="image" tabindex="2"><img src="https://lvelvis.github.io/post-images/1588233371696.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="http://lvelvis.github.io/post-images/1588233371696.png" alt="" loading="lazy"></figure>
 <h2 id="查看operator的状态">查看Operator的状态</h2>
 <p>执行apply之后稍等一会<br>
 operator会在集群内的每个主机创建两个pod:rook-discover,rook-ceph-agent</p>
 <p>kubectl -n rook-ceph-system get pod -o wide<br>
-<img src="https://lvelvis.github.io/post-images/1588233523024.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233523024.png" alt="" loading="lazy"></p>
 <h2 id="给节点打标签">给节点打标签</h2>
 <p>运行ceph-mon的节点打上：ceph-mon=enabled<br>
 kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-mon=enabled<br>
@@ -585,29 +585,29 @@ cluster会在rook-ceph这个namesapce创建资源<br>
 看到所有的pod都Running就行了<br>
 注意看一下pod分布的宿主机，跟我们打标签的主机是一致的<br>
 kubectl -n rook-ceph get pod -o wide<br>
-<img src="https://lvelvis.github.io/post-images/1588233756856.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233756856.png" alt="" loading="lazy"></p>
 <p>切换到其他主机看一下磁盘</p>
 <p>切换到kube-node1<br>
 lsblk<br>
-<img src="https://lvelvis.github.io/post-images/1588233803458.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233803458.png" alt="" loading="lazy"></p>
 <h2 id="配置ceph-dashboard">配置ceph dashboard</h2>
 <p>看一眼dashboard在哪个service上<br>
 kubectl -n rook-ceph get service<br>
 可以看到dashboard监听了8443端口<br>
-<img src="https://lvelvis.github.io/post-images/1588233853544.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233853544.png" alt="" loading="lazy"></p>
 <p>创建个nodeport类型的service以便集群外部访问<br>
 kubectl apply -f dashboard-external-https.yaml</p>
 <p>查看一下nodeport在哪个端口<br>
 kubectl -n rook-ceph get service<br>
-<img src="https://lvelvis.github.io/post-images/1588233909644.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233909644.png" alt="" loading="lazy"></p>
 <p>找出Dashboard的登陆账号和密码<br>
 MGR_POD=<code>kubectl get pod -n rook-ceph | grep mgr | awk '{print $1}'</code><br>
 kubectl -n rook-ceph logs $MGR_POD | grep password<br>
-<img src="https://lvelvis.github.io/post-images/1588233955731.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588233955731.png" alt="" loading="lazy"></p>
 <p>打开浏览器输入任意一个Node的IP+nodeport端口<br>
 这里我的就是：https://192.168.1.2:30290<br>
-<img src="https://lvelvis.github.io/post-images/1588234024005.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588234065656.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588234024005.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588234065656.png" alt="" loading="lazy"></p>
 <h2 id="配置ceph为storageclass">配置ceph为storageclass</h2>
 <p>官方给了一个样本文件：storageclass.yaml<br>
 这个文件使用的是 RBD 块存储<br>
@@ -724,17 +724,17 @@ kubectl label nodes kube-node4 ceph-osd=enabled<br>
 原来的基础上添加node4的信息</p>
 <p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
 vi cluster.yam<br>
-<img src="https://lvelvis.github.io/post-images/1588234207475.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588234207475.png" alt="" loading="lazy"></p>
 <p>apply一下cluster.yaml文件<br>
 kubectl apply -f cluster.yaml</p>
 <p>盯着rook-ceph名称空间,集群会自动添加node4进来<br>
 kubectl -n rook-ceph get pod -o wide -w<br>
 kubectl -n rook-ceph get pod -o wide<br>
-<img src="https://lvelvis.github.io/post-images/1588234283568.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588234307875.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588234283568.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588234307875.png" alt="" loading="lazy"><br>
 去node4节点看一下磁盘<br>
 lsblk<br>
-<img src="https://lvelvis.github.io/post-images/1588234334204.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588234334204.png" alt="" loading="lazy"></p>
 <h2 id="删除一个节点">删除一个节点</h2>
 <p>去掉node3的标签<br>
 kubectl label nodes kube-node3 ceph-osd-<br>
@@ -742,13 +742,13 @@ kubectl label nodes kube-node3 ceph-osd-<br>
 删除node3的信息<br>
 cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
 vi cluster.yam<br>
-<img src="https://lvelvis.github.io/post-images/1588234380826.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588234380826.png" alt="" loading="lazy"></p>
 <p>apply一下cluster.yaml文件<br>
 kubectl apply -f cluster.yaml<br>
-<img src="https://lvelvis.github.io/post-images/1588234493936.png" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1588234493936.png" alt="" loading="lazy"></p>
 <p>kubectl -n rook-ceph get pod -o wide<br>
-<img src="https://lvelvis.github.io/post-images/1588234548709.png" alt="" loading="lazy"><br>
-<img src="https://lvelvis.github.io/post-images/1588234579591.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588234548709.png" alt="" loading="lazy"><br>
+<img src="http://lvelvis.github.io/post-images/1588234579591.png" alt="" loading="lazy"><br>
 最后记得删除宿主机的/var/lib/rook文件夹</p>
 ]]></content>
     </entry>
