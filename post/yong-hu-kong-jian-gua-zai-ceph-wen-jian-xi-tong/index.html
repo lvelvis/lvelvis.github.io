@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>kubesphere安装使用体验 | lvelvis</title>
+<title>用户空间挂载 CEPH 文件系统 | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1588918127061">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,8 +29,8 @@
 
 
 
-  <meta name="description" content="kubesphere安装使用体验" />
-  <meta name="keywords" content="kubesphere,k8s" />
+  <meta name="description" content="用户空间挂载 CEPH 文件系统" />
+  <meta name="keywords" content="rook-ceph" />
 </head>
 
 <body>
@@ -248,17 +248,9 @@
   <div class="toc-wrapper auto-number auto"
     id="toc_wrapper">
     <ul class="markdownIt-TOC">
-<li>
-<ul>
-<li>
-<ul>
-<li><a href="#%E5%BD%93%E5%89%8D%E7%8E%AF%E5%A2%83">当前环境：</a></li>
-<li><a href="#%E5%BC%80%E5%A7%8B%E5%AE%89%E8%A3%85">开始安装</a></li>
-<li><a href="#%E5%AE%89%E8%A3%85%E8%BF%87%E7%A8%8B%E5%87%BA%E7%8E%B0%E7%9A%84%E9%94%99%E8%AF%AF">安装过程出现的错误</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li><a href="#%E5%9C%A8%E5%AE%A2%E6%88%B7%E7%AB%AF%E4%B8%BB%E6%9C%BA%E4%B8%8A%E6%8A%8A%E7%9B%91%E8%A7%86%E5%99%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E7%9A%84-ceph-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E6%8B%B7%E8%B4%9D%E5%88%B0-etcceph-%E7%9B%AE%E5%BD%95%E4%B8%8B">在客户端主机上，把监视器主机上的 Ceph 配置文件拷贝到 /etc/ceph/ 目录下</a></li>
+<li><a href="#%E5%9C%A8%E5%AE%A2%E6%88%B7%E7%AB%AF%E4%B8%BB%E6%9C%BA%E4%B8%8A%E6%8A%8A%E7%9B%91%E8%A7%86%E5%99%A8%E4%B8%BB%E6%9C%BA%E4%B8%8A%E7%9A%84-ceph-%E5%AF%86%E9%92%A5%E7%8E%AF%E6%8B%B7%E8%B4%9D%E5%88%B0-etcceph-%E7%9B%AE%E5%BD%95%E4%B8%8B">在客户端主机上，把监视器主机上的 Ceph 密钥环拷贝到 /etc/ceph 目录下</a></li>
+<li><a href="#%E7%A1%AE%E4%BF%9D%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%BA%E5%99%A8%E4%B8%8A%E7%9A%84-ceph-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%92%8C%E5%AF%86%E9%92%A5%E7%8E%AF%E9%83%BD%E6%9C%89%E5%90%88%E9%80%82%E7%9A%84%E6%9D%83%E9%99%90%E4%BD%8D%E5%A6%82-chmod-644">确保客户端机器上的 Ceph 配置文件和密钥环都有合适的权限位，如 chmod 644 。</a></li>
 </ul>
 
   </div>
@@ -524,8 +516,8 @@
           <div class="section bg-color post post-page">
             <header class="post-header">
   <h1 class="post-title">
-    <a class="post-title-link" href="http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/">
-      kubesphere安装使用体验
+    <a class="post-title-link" href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/">
+      用户空间挂载 CEPH 文件系统
     </a>
   </h1>
   <div class="post-meta">
@@ -533,7 +525,7 @@
     <span class="meta-item pc-show">
       <i class="fa fa-calendar-o"></i>
       <span>发布于</span>
-      <span>2020-04-29</span>
+      <span>2020-05-08</span>
       <span class="post-meta-divider pc-show">|</span>
     </span>
     
@@ -542,14 +534,8 @@
       <span class="pc-show">分类于</span>
       
       
-      <a href="http://lvelvis.github.io/tag/BU7sbQs51/">
-        <span>kubesphere</span>
-      </a>、
-      
-      
-      
-      <a href="http://lvelvis.github.io/tag/Q617Y3Kh2/">
-        <span>k8s</span>
+      <a href="http://lvelvis.github.io/tag/hu0mNDfuy/">
+        <span>rook-ceph</span>
       </a>
       
       
@@ -558,17 +544,17 @@
     
     <span class="meta-item">
       <i class="fa fa-clock-o"></i>
-      <span>3分钟</span>
+      <span>2分钟</span>
     </span>
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>576<span class="pc-show">字数</span></span>
+      <span>239<span class="pc-show">字数</span></span>
     </span>
     
     
     
-    <span id="/post/kubesphere-an-zhuang-shi-yong-ti-yan/" data-flag-title="kubesphere安装使用体验" class="meta-item pc-show leancloud_visitors">
+    <span id="/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/" data-flag-title="用户空间挂载 CEPH 文件系统" class="meta-item pc-show leancloud_visitors">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-eye"></i>
       <span>浏览量：<span class="leancloud-visitors-count"></span></span>
@@ -577,102 +563,21 @@
   </div>
 </header>
             <div class="post-body next-md-body" id="post_body">
-              <p>最近又出来个kubesphere的工具用来管理k8s，今天特意来安装体验下；<br>
-github地址：https://github.com/pixiake/ks-installer</p>
-<p>官方使用文档：https://kubesphere.io/docs/advanced-v2.0/zh-CN/installation/all-in-one/</p>
-<p>先放上安装效果图，UI界面还是很清爽的：<br>
-<img src="http://lvelvis.github.io/post-images/1588152934567.png" alt="" loading="lazy"></p>
-<h3 id="当前环境">当前环境：</h3>
-<pre><code>k8s集群已经安装完成，用kubesphere管理现有的k8s集群；
-
-k8s版本为1.14  
-
-系统为centos7.6
-
-kubesphere使用要求：
-
-kubernetes version &gt; 1.13.0
-
-helm version &gt; 2.10.0
-
-a default storage class must be in kubernetes cluster
+              <p>Ceph v0.55 及后续版本默认开启了 cephx 认证。从用户空间（ FUSE ）挂载一 Ceph 文件系统前，确保客户端主机有一份 Ceph 配置副本、和具备 Ceph 元数据服务器能力的密钥环。</p>
+<h1 id="在客户端主机上把监视器主机上的-ceph-配置文件拷贝到-etcceph-目录下">在客户端主机上，把监视器主机上的 Ceph 配置文件拷贝到 /etc/ceph/ 目录下</h1>
+<pre><code>sudo mkdir -p /etc/ceph
+sudo scp {user}@{server-machine}:/etc/ceph/ceph.conf /etc/ceph/ceph.conf
 </code></pre>
-<p>安装完成后默认用户名密码：</p>
-<p>用户名：admin</p>
-<p>密码：P@88w0rd</p>
-<h3 id="开始安装">开始安装</h3>
-<p>安装步骤大概记录：</p>
-<pre><code>kubectl create ns kubesphere-system
-kubectl create ns kubesphere-monitoring-system
-
-#访问etcd用到的secret
-kubectl -n kubesphere-monitoring-system create secret generic kube-etcd-client-certs  --from-file=etcd-client-ca.crt=ca.pem  --from-file=etcd-client.crt=etcd-key.pem  --from-file=etcd-client.key=etcd.pem
-
-#管理k8s用到的secret
-
-kubectl -n kubesphere-system create secret generic kubesphere-ca  --from-file=ca.crt=ca.pem --from-file=ca.key=ca-key.pem
-
-#clone好github项目，执行下面的这条命令
-
-cd deploy
-kubectl apply -f kubesphere-installer.yaml
+<h1 id="在客户端主机上把监视器主机上的-ceph-密钥环拷贝到-etcceph-目录下">在客户端主机上，把监视器主机上的 Ceph 密钥环拷贝到 /etc/ceph 目录下</h1>
+<pre><code>sudo scp {user}@{server-machine}:/etc/ceph/ceph.keyring /etc/ceph/ceph.keyring
 </code></pre>
-<p>执行完上面的命令，可以通过下面的命令，查看安装过程日志</p>
-<pre><code>kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l job-name=kubesphere-installer -o jsonpath='{.items[0].metadata.name}') -f
+<h1 id="确保客户端机器上的-ceph-配置文件和密钥环都有合适的权限位如-chmod-644">确保客户端机器上的 Ceph 配置文件和密钥环都有合适的权限位，如 chmod 644 。</h1>
+<p>cephx 如何配置请参考 CEPHX 配置参考。<br>
+要把 Ceph 文件系统挂载为用户空间文件系统，可以用 ceph-fuse 命令，例如：</p>
+<pre><code>sudo mkdir /home/usernname/cephfs
+sudo ceph-fuse -m 192.168.0.1:6789 /home/username/cephfs
 </code></pre>
-<p>查看安装结果，STATUS跟下面保持一致才说明安装成功</p>
-<pre><code>[root@ks-allinone deploy]# kubectl get pods -n kubesphere-system
-NAME                                     READY   STATUS      RESTARTS   AGE
-ks-account-6db466d8dc-srrwj              1/1     Running     0          149m
-ks-apigateway-7d77cb9495-jzmg6           1/1     Running     0          170m
-ks-apiserver-f8469fd47-b58rm             1/1     Running     0          166m
-ks-console-54c849bdc9-dfkbf              1/1     Running     0          168m
-ks-console-54c849bdc9-z2d5q              1/1     Running     0          168m
-ks-controller-manager-569456b4cd-gngm5   1/1     Running     0          170m
-ks-docs-6bbdcc9bfb-6jldz                 1/1     Running     0          3h7m
-kubesphere-installer-7ph6l               0/1     Completed   1          3h11m
-openldap-5c986c5bff-rzqwv                1/1     Running     0          3h25m
-redis-76dc4db5dd-lv6kg                   1/1     Running     0          149m
-</code></pre>
-<h3 id="安装过程出现的错误">安装过程出现的错误</h3>
-<p>1.在安装的时提示metrics-server已经安装，导致安装中断；</p>
-<p>解析办法：在kubesphere-installer.yaml的configMap增加配置：metrics_server_enable: False（默认是没有的）</p>
-<pre><code>apiVersion: v1
-data:
-  ks-config.yaml: |
-    kube_apiserver_host: 10.10.5.208:6443
-    etcd_tls_enable: True
-    etcd_endpoint_ips: 10.10.5.169,10.10.5.183,10.10.5.184
-    disableMultiLogin: True
-    elk_prefix: logstash
-    metrics_server_enable: False
-  #  local_registry: 192.168.1.2:5000
-kind: ConfigMap
-metadata:
-  name: kubesphere-config
-  namespace: kubesphere-system
-</code></pre>
-<p>增加Ingress配置：</p>
-<pre><code>apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: kubesphere
-  namespace: kubesphere-system
-  annotations:
-    #kubernetes.io/ingress.class: traefik
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-  - host: ks.staplescn.com
-    http:
-      paths:
-      - path:
-        backend:
-          serviceName: ks-console
-          servicePort: 80
-</code></pre>
-<p>访问界面：<br>
-<img src="http://lvelvis.github.io/post-images/1588153130667.png" alt="" loading="lazy"></p>
+<p>详情见 <a href="http://docs.ceph.org.cn/man/8/ceph-fuse/">ceph-fuse</a></p>
 
             </div>
             <div class="post-footer">
@@ -683,7 +588,7 @@ spec:
     </li>
     <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/" title="kubesphere安装使用体验">http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/</a>
+      <a href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/" title="用户空间挂载 CEPH 文件系统">http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/</a>
     </li>
     <li class="post-copyright-license">
       <strong>版权声明： </strong>
@@ -692,23 +597,17 @@ spec:
   </ul>
   <div class="tags">
     
-      <a href="http://lvelvis.github.io/tag/BU7sbQs51/"># kubesphere</a>
-    
-      <a href="http://lvelvis.github.io/tag/Q617Y3Kh2/"># k8s</a>
+      <a href="http://lvelvis.github.io/tag/hu0mNDfuy/"># rook-ceph</a>
     
   </div>
   <div class="nav">
     <div class="nav-prev">
       
-        <i class="fa fa-chevron-left"></i>
-        <a class="nav-pc-next" title="K8S通过helm 部署 ELK 7.3" href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">K8S通过helm 部署 ELK 7.3</a class="nav-pc-next">
-        <a class="nav-mobile-prev" title="K8S通过helm 部署 ELK 7.3" href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">上一篇</a>
-      
     </div>
     <div class="nav-next">
       
-        <a class="nav-pc-next" title="kubernetes Tekton-CI/CD 持续集成流水线" href="http://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">kubernetes Tekton-CI/CD 持续集成流水线</a>
-        <a class="nav-mobile-next" title="kubernetes Tekton-CI/CD 持续集成流水线" href="http://lvelvis.github.io/post/kubernetes-tekton-cicd-chi-xu-ji-cheng-liu-shui-xian/">下一篇</a>
+        <a class="nav-pc-next" title="linux如何导入自定义证书" href="http://lvelvis.github.io/post/linux-ru-he-dao-ru-zi-ding-yi-zheng-shu/">linux如何导入自定义证书</a>
+        <a class="nav-mobile-next" title="linux如何导入自定义证书" href="http://lvelvis.github.io/post/linux-ru-he-dao-ru-zi-ding-yi-zheng-shu/">下一篇</a>
         <i class="fa fa-chevron-right"></i>
       
     </div>
