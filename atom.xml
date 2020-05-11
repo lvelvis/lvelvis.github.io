@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-08T06:11:42.469Z</updated>
+    <updated>2020-05-11T04:50:52.728Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,33 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[beego——静态文件加载路径修改]]></title>
+        <id>http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/</id>
+        <link href="http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/">
+        </link>
+        <updated>2020-05-11T04:49:08.000Z</updated>
+        <content type="html"><![CDATA[<p>Go 语言内部其实已经提供了 http.ServeFile，通过这个函数可以实现静态文件的服务。</p>
+<p>beego 针对这个功能进行了一层封装，通过下面的方式进行静态文件注册：</p>
+<pre><code>beego.SetStaticPath(&quot;/static&quot;,&quot;public&quot;)
+</code></pre>
+<p>第一个参数是路径，url 路径信息<br>
+第二个参数是静态文件目录（相对应用所在的目录）<br>
+beego 支持多个目录的静态文件注册，用户可以注册如下的静态文件目录：</p>
+<pre><code>beego.SetStaticPath(&quot;/images&quot;,&quot;images&quot;)
+beego.SetStaticPath(&quot;/css&quot;,&quot;css&quot;)
+beego.SetStaticPath(&quot;/js&quot;,&quot;js&quot;)
+```　　
+
+设置了如上的静态目录之后，用户访问 /images/login/login.png，那么就会访问应用对应的目录下面的 images/login/login.png 文件。
+
+如果是访问 /static/img/logo.png，那么就访问 public/img/logo.png文件。
+
+默认情况下 beego 会判断目录下文件是否存在，不存在直接返回 404 页面，如果请求的是 index.html，那么由于 http.ServeFile 默认是会跳转的，不提供该页面的显示。
+
+因此 beego 可以设置 beego.BConfig.WebConfig.DirectoryIndex=true 这样来使得显示 index.html 页面。而且开启该功能之后，用户访问目录就会显示该目录下所有的文件列表。</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[用户空间挂载 CEPH 文件系统]]></title>
         <id>http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/</id>

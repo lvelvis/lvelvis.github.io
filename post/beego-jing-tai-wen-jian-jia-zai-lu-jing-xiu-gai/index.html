@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>lvelvis</title>
+<title>beego——静态文件加载路径修改 | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1589172641081">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,6 +29,8 @@
 
 
 
+  <meta name="description" content="beego——静态文件加载路径修改" />
+  <meta name="keywords" content="golang,beego" />
 </head>
 
 <body>
@@ -158,10 +160,25 @@
   <div class="main-continer">
     
     <div
-      class="section-layout bg-color mist">
+      class="section-layout mist bg-color">
       <div class="section-layout-wrapper">
-        <div id="sidebarMeta" class="sidebar">
-    
+        
+
+<div class="sidebar">
+  
+    <div class="sidebar-box box-shadow-wrapper  right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body mist" id="sidebar_body">
+        
+          
+            
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -224,109 +241,252 @@
 
 
 </div>
+          
+        
+      </div>
+    </div>
+  
 </div>
 <script>
-  let sidebarMeta = document.querySelector('#sidebarMeta');
-  let scheme = 'mist';
-  let sidebarWrapper = document.querySelector('.sidebar-wrapper');
-  if (sidebarMeta && (scheme === 'pisces' || scheme === 'gemini')) {
-    document.addEventListener('scroll', function(e) {
-      if (document.scrollingElement.scrollTop > parseInt(sidebarMeta.style.marginTop) + 10) {
-        sidebarWrapper.classList.add('home-sidebar-fixed')
-      } else {
-        sidebarWrapper.classList.remove('home-sidebar-fixed')
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
       }
-    });
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
   }
-  </script>
-        <div class="section-box tag-line box-shadow-wrapper">
-          <section class="section tags-section posts-expand bg-color">
-            <div class="padding-wrapper">
-  <div class="tag-timeline-box">
-    <div class="tag-timeline-wrapper">
-      <div class="tag-timeline-title">
-        <h2>
-          rook-ceph
-          <small>标签</small>
-        </h2>
-      </div>
+
+  postToc && postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+  if (sidebarBody) {
+    if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+      let hasFix = false;
+      let scrollEl = document.querySelector('.main-continer');
+      let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+      window.addEventListener('scroll', function(e) {
+        if (document.scrollingElement.scrollTop >= limitTop) {
+          if (!hasFix) {
+            sidebar.classList.add('sidebar-fixed');
+            hasFix = true;
+          }
+        } else {
+          if (hasFix) {
+            sidebar.classList.remove('sidebar-fixed');
+            hasFix = false;
+          }
+        }
+      });
+    }
+  }
+  
+</script>
+        <div class="section-box box-shadow-wrapper">
+          <div class="section bg-color post post-page">
+            <header class="post-header">
+  <h1 class="post-title">
+    <a class="post-title-link" href="http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/">
+      beego——静态文件加载路径修改
+    </a>
+  </h1>
+  <div class="post-meta">
+    
+    <span class="meta-item pc-show">
+      <i class="fa fa-calendar-o"></i>
+      <span>发布于</span>
+      <span>2020-05-11</span>
+      <span class="post-meta-divider pc-show">|</span>
+    </span>
+    
+    <span class="meta-item">
+      <i class="fa fa-folder-o"></i>
+      <span class="pc-show">分类于</span>
+      
+      
+      <a href="http://lvelvis.github.io/tag/oHQV9cP9p/">
+        <span>golang</span>
+      </a>、
       
       
       
-      
-      
-      
-      
-      
-      
-      <a href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/">
-        <div class="motion-warpper">
-          <div class="tag-post-node">
-            <h1>
-              05-08
-              <small>用户空间挂载 CEPH 文件系统</small>
-            </h1>
-          </div>
-        </div>
+      <a href="http://lvelvis.github.io/tag/WCSltmB8m/">
+        <span>beego</span>
       </a>
       
       
+    </span>
+    <span class="post-meta-divider">|</span>
+    
+    <span class="meta-item">
+      <i class="fa fa-clock-o"></i>
+      <span>2分钟</span>
+    </span>
+    <span class="meta-item">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-file-word-o"></i>
+      <span>328<span class="pc-show">字数</span></span>
+    </span>
+    
+    
+    
+    <span id="/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/" data-flag-title="beego——静态文件加载路径修改" class="meta-item pc-show leancloud_visitors">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-eye"></i>
+      <span>浏览量：<span class="leancloud-visitors-count"></span></span>
+    </span>
+    
+  </div>
+</header>
+            <div class="post-body next-md-body" id="post_body">
+              <p>Go 语言内部其实已经提供了 http.ServeFile，通过这个函数可以实现静态文件的服务。</p>
+<p>beego 针对这个功能进行了一层封装，通过下面的方式进行静态文件注册：</p>
+<pre><code>beego.SetStaticPath(&quot;/static&quot;,&quot;public&quot;)
+</code></pre>
+<p>第一个参数是路径，url 路径信息<br>
+第二个参数是静态文件目录（相对应用所在的目录）<br>
+beego 支持多个目录的静态文件注册，用户可以注册如下的静态文件目录：</p>
+<pre><code>beego.SetStaticPath(&quot;/images&quot;,&quot;images&quot;)
+beego.SetStaticPath(&quot;/css&quot;,&quot;css&quot;)
+beego.SetStaticPath(&quot;/js&quot;,&quot;js&quot;)
+```　　
+
+设置了如上的静态目录之后，用户访问 /images/login/login.png，那么就会访问应用对应的目录下面的 images/login/login.png 文件。
+
+如果是访问 /static/img/logo.png，那么就访问 public/img/logo.png文件。
+
+默认情况下 beego 会判断目录下文件是否存在，不存在直接返回 404 页面，如果请求的是 index.html，那么由于 http.ServeFile 默认是会跳转的，不提供该页面的显示。
+
+因此 beego 可以设置 beego.BConfig.WebConfig.DirectoryIndex=true 这样来使得显示 index.html 页面。而且开启该功能之后，用户访问目录就会显示该目录下所有的文件列表。</code></pre>
+
+            </div>
+            <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong>本文作者：</strong>
+      lvelvis
+    </li>
+    <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/" title="beego——静态文件加载路径修改">http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong>
+      本博客所有文章除特别声明外，均采用<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i> BY-NC-SA</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+  <div class="tags">
+    
+      <a href="http://lvelvis.github.io/tag/oHQV9cP9p/"># golang</a>
+    
+      <a href="http://lvelvis.github.io/tag/WCSltmB8m/"># beego</a>
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
       
+    </div>
+    <div class="nav-next">
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      <a href="http://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
-        <div class="motion-warpper">
-          <div class="tag-post-node">
-            <h1>
-              12-12
-              <small>kubernetes搭建rook-ceph</small>
-            </h1>
-          </div>
-        </div>
-      </a>
-      
-      
-      
-      
-      
-      
+        <a class="nav-pc-next" title="用户空间挂载 CEPH 文件系统" href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/">用户空间挂载 CEPH 文件系统</a>
+        <a class="nav-mobile-next" title="用户空间挂载 CEPH 文件系统" href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/">下一篇</a>
+        <i class="fa fa-chevron-right"></i>
       
     </div>
   </div>
 </div>
-          </section>
+            
+  <script src="https://cdn.jsdelivr.net/npm/valine@1.4.4/dist/Valine.min.js"></script>
+<div id="vcomments" style="padding: 10px 0px 0px 0px"></div>
+
+<style>
+  .v .veditor {
+    min-height: 10rem;
+    background-image: url('https://upimage.alexhchu.com/2020/04/21/47eda59424daa.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: right;
+    background-color: rgba(255, 255, 255, 0);
+    resize: none;
+  }
+
+  .v .vwrap {
+    border: 1px solid #000 !important;
+  }
+
+  .v .vbtn {
+    padding: .4rem 1.2rem !important;
+    border-color: #fff !important;
+    background-color: #49b1f5 !important;
+    color: #fff !important;
+    font-size: .7rem !important;
+  }
+
+  .v .vcards .vcard .vh .vmeta .vat {
+    padding: 0 .8rem !important;
+    border: 1px solid #00c4b6 !important;
+    border-radius: 5px !important;
+    color: #00c4b6 !important;
+  }
+</style>
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'q6RNtDXsSlHgt7Wml6Krh1My-gzGzoHsz',
+    appKey: 'XVXX46bo5q1RnjaGrExJEXOm',
+    avatar: 'identicon',
+    placeholder: '',
+    pageSize: '10',
+    lang: 'zh-cn',
+    visitor: 'true' === 'true',
+    highlight: 'true' === 'true',
+    avatarForce: 'true' === 'true',
+  });
+</script>
+
+          </div>
         </div>
       </div>
     </div>
@@ -1055,6 +1215,36 @@ Yellow;"><b><?php echo $conf['xbmz']?></b></font></h2></marquee>
   // 代码高亮
   hljs.initHighlightingOnLoad();
 
+</script>
+    <div class="light-box" id="light_box"></div>
+<script>
+  let imgs = document.querySelectorAll('.post-body img');
+  let lightBox = document.querySelector('#light_box');
+  lightBox.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+  })
+  lightBox.addEventListener('mousewheel', (e) => {
+    e.preventDefault()
+  })
+  let width = window.innerWidth * 0.8;
+  lightBox.onclick = () => {
+    let img = lightBox.querySelector('img');
+    lightBox.style = '';
+    img && img.remove();
+  }
+  imgs.forEach(item => {
+    item.onclick = function (e) {
+      let lightImg = document.createElement('img');
+      lightImg.src = this.src;
+      lightBox.style = `height: 100%; opacity: 1; background-color: rgba(0, 0, 0, 0.5);cursor: zoom-out;`;
+      lightImg.style = `width: ${width}px; border: 1px solid #fff; border-radius: 2px;`;
+      lightImg.onclick = function () {
+        lightBox.style = '';
+        this.remove();
+      }
+      lightBox.append(lightImg);
+    }
+  })
 </script>
   </div>
 </body>
@@ -2068,6 +2258,5 @@ kubectl apply -f cluster.yaml&lt;br&gt;
 
 
 <script src=" /media/js/cool.js"></script>
-
 
 </html>
