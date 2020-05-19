@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-11T04:51:17.104Z</updated>
+    <updated>2020-05-19T05:35:07.705Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,159 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[k8s hpa弹性扩容配置]]></title>
+        <id>http://lvelvis.github.io/post/k8s-hpa-dan-xing-kuo-rong-pei-zhi/</id>
+        <link href="http://lvelvis.github.io/post/k8s-hpa-dan-xing-kuo-rong-pei-zhi/">
+        </link>
+        <updated>2020-05-19T05:24:13.000Z</updated>
+        <content type="html"><![CDATA[<pre><code>HPA全称Horizontal Pod Autoscaling，是K8s实现pod自动水平扩容缩容的特性，这个特性使整个kubernetes集群马上高大上起来了。
+要使用HPA也不是这么简单的，HPA api分v1、v2beta1、v2bate2三种，v1只支持通过CPU衡量扩缩容，v2bate1加入针对内存作为度量，v2bate2可以用customer metrics例如网络等，所以v2bate1开始才比较实用。
+</code></pre>
+<p>要使用HPA必须要开启以下两个特性：</p>
+<p>Aggregation Layer 聚合层，通过与核心的apiserver分离，实现自定义的扩展功能<br>
+metrics-server 数据收集，能够收集pod、node等实时运行指标（cpu、内存），给k8s集群使用，例如kubectl top命令、HPA<br>
+比较老的版本使用heapster</p>
+<h1 id="aggregation-layer">Aggregation Layer</h1>
+<p>要打开Aggregation Layer，需要配置一下apiserver，增加相关认证证书。认证流程是client发起请求到apiserver，apiserver与aggergated apiserver建立tls安全链接，把请求proxy到aggergated apiserver，继续进行–requestheader-*参数的相关认证。</p>
+<p>认证流程<br>
+<img src="http://lvelvis.github.io/post-images/1589865988979.png" alt="" loading="lazy"></p>
+<p>需要生成aggregate使用的证书，参考cfssl生成证书方法，proxy-client-cert-file的CN需要与requestheader-allowed-names匹配。<br>
+在apiserver增加如下启动参数</p>
+<pre><code>--requestheader-client-ca-file=/etc/kubernetes/pki/agg-ca.pem
+--proxy-client-cert-file=/etc/kubernetes/pki/aggregate.pem
+--proxy-client-key-file=/etc/kubernetes/pki/aggregate-key.pem
+--requestheader-allowed-names=aggregator
+--requestheader-extra-headers-prefix=X-Remote-Extra-
+--requestheader-group-headers=X-Remote-Group
+--requestheader-username-headers=X-Remote-User
+#如果kube-proxy没有在Master上面运行，还需要配置
+--enable-aggregator-routing=true
+</code></pre>
+<h1 id="metrics-server">metrics server</h1>
+<p>从k8s 1.8开始，集群的资源使用情况都通过metrics api收集，例如容器CPU、内存。这些指标可用于kuberctl top或者k8s的HPA等特性。<br>
+metrice server可以在github找到并部署</p>
+<pre><code>git clone https://github.com/kubernetes-incubator/metrics-server
+cd metrics-server
+kubectl create -f deploy/1.8+/
+</code></pre>
+<pre><code>注1：metrics-server默认使用node的主机名，但是coredns里面没有物理机主机名的解析，一种是部署的时候添加一个参数： –kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP,第二种是使用dnsmasq构建一个上游的dns服务
+注2：kubelet 的10250端口使用的是https协议，连接需要验证tls证书。可以在metrics server启动命令添加参数–kubelet-insecure-tls不验证客户端证书
+注3：yaml文件中的image地址k8s.gcr.io/metrics-server-amd64:v0.3.3 需要梯子，需要改成中国可以访问的image地址，可以使用aliyun的。这里使用hub.docker.com里的google镜像地址 image: mirrorgooglecontainers/metrics-server-amd64:v0.3.3
+</code></pre>
+<p>成功运行kubectl top命令</p>
+<pre><code>ubuntu@k8s-dev-m1:~/k8sssl/agglayer$ kubectl top nodes
+NAME                   CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+k8s-dev-node2          103m         5%      2696Mi                 72%       
+k8s-dev-node3.bxr.cn   115m      2%     5312Mi                  67%  
+k8s-dev-node4          57m          2%       2634Mi                  70%     
+k8s-dev-node5          148m         7%       2443Mi                  65%
+</code></pre>
+<h1 id="hpa">HPA</h1>
+<pre><code>有了metrics就可以开始使用HPA特性了。hpa有几个特点
+deploy或者rs等需要设置resources才能使用hpa
+如果我们创建一个HPA controller，它会每隔15s（可以通过–horizontal-pod-autoscaler-sync-period修改）检测一次hpa定义的资源与实际资源使用情况，如果达到阀值就会调整pod数量。
+HPA设置的阀值不是绝对的，允许设置一个浮动范围，–horizontal-pod-autoscaler-tolerance默认是0.1
+pod调整算法 desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )]
+scale有一个窗口期，期间每次变化会记录下来，选择最优的调整建议再进行scale，这样可以保证资源平滑变动，通过–horizontal-pod-autoscaler-downscale-stabilization设定，默认5分钟。
+通过hpa调整新增的pod不会马上ready，这时候收集的metrics就不准，为了减少影响，hpa一开始不会收集新pod的metrics。通过–horizontal-pod-autoscaler-initial-readiness-delay（默认30s）和 –horizontal-pod-autoscaler-cpu-initialization-period（默认为 5 分钟）调整
+</code></pre>
+<p><img src="http://lvelvis.github.io/post-images/1589866316410.svg" alt="" loading="lazy"><br>
+示例hpa.yml:</p>
+<pre><code>apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-test
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: podinfo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization 
+        averageUtilization: 160
+</code></pre>
+<p>上面的示例包括cpu和memory指标，averageUtilization这个百分比是根据deployment的resources.requests计算的。例如有deployment限制requests是512Mi，replicas是2，实际pod1用了612Mi，pod2用了598Mi，计算公式是 (612+598)/2/512 = 118%</p>
+<p>查看hpa的情况，targets第一个是memory，第二个是cpu指标，REPLICAS是根据计算后的当前pod数</p>
+<pre><code>ubuntu@k8s-m1:~/k8s/hpa$ kubectl get hpa
+NAME       REFERENCE            TARGETS             MINPODS   MAXPODS   REPLICAS   AGE
+hpa-test   Deployment/podinfo   120%/160%, 6%/75%   2         4         3          97m
+</code></pre>
+<p>官方示例还包括packets-per-second、requests-per-second这些指标，需要进一步验证</p>
+<pre><code>apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: AverageUtilization
+        averageUtilization: 50
+  - type: Pods
+    pods:
+      metric:
+        name: packets-per-second
+      targetAverageValue: 1k
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1beta1
+        kind: Ingress
+        name: main-route
+      target:
+        kind: Value
+        value: 10k
+status:
+  observedGeneration: 1
+  lastScaleTime: &lt;some-time&gt;
+  currentReplicas: 1
+  desiredReplicas: 1
+  currentMetrics:
+  - type: Resource
+    resource:
+      name: cpu
+    current:
+      averageUtilization: 0
+      averageValue: 0
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1beta1
+        kind: Ingress
+        name: main-route
+      current:
+        value: 10k
+
+</code></pre>
+<p><a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#create-horizontal-pod-autoscaler">官方hpa参数</a></p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[beego静态文件加载路径修改]]></title>
         <id>http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/</id>
