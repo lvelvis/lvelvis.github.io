@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-26T05:53:37.261Z</updated>
+    <updated>2020-05-26T05:58:49.578Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -93,7 +93,7 @@ fmt.Println(i,s4[i])
 3 43
 </code></pre>
 <h1 id="slice切片">slice切片</h1>
-<p>1、切片是数组的引用<br>
+<p>1、切片是数组的引用(切片是数组的一部分)<br>
 2、切片的使用类似数组，如遍历<br>
 3、切片的长度是可变的</p>
 <h2 id="创建语法">创建语法</h2>
