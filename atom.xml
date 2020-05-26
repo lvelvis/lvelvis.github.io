@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-26T05:49:27.400Z</updated>
+    <updated>2020-05-26T05:53:37.261Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -16,7 +16,7 @@
         <link href="http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/">
         </link>
         <updated>2020-05-26T05:29:04.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="一-数组类似python的list">一、数组(类似python的list)</h1>
+        <content type="html"><![CDATA[<h1 id="数组">数组</h1>
 <p>数组的长度一旦定义了就不能动态增长，并且存储的数据类型必须相同。</p>
 <h2 id="创建方法">创建方法：</h2>
 <p>var 数组名 [长度]数据类型<br>
@@ -180,7 +180,7 @@ hello
 hello
 狗hello
 </code></pre>
-<h1 id="map类似python的dict">map(类似python的dict)</h1>
+<h1 id="map">map</h1>
 <p>map是key-value数据结构(类似python的dict)<br>
 map是无序存储的</p>
 <p>创建map语法<br>
