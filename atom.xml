@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-19T05:36:04.008Z</updated>
+    <updated>2020-05-26T05:49:27.400Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,224 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[golang笔记-数组、切片、map]]></title>
+        <id>http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/">
+        </link>
+        <updated>2020-05-26T05:29:04.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="一-数组类似python的list">一、数组(类似python的list)</h1>
+<p>数组的长度一旦定义了就不能动态增长，并且存储的数据类型必须相同。</p>
+<h2 id="创建方法">创建方法：</h2>
+<p>var 数组名 [长度]数据类型<br>
+例如：</p>
+<pre><code>package main
+import &quot;fmt&quot;
+ 
+func main(){
+    var test [5]int //定义数组名字test，长度为5，数据类型为int的数组
+    test[0] = 1    //赋值
+    test[1] = 2   
+    test[2] = 3
+    test[3] = 4
+    fmt.Println(test) 
+    fmt.Println(test[2])
+    fmt.Println(test[1:3]) //输出1到3的数组
+    fmt.Println(test[0:]) //0到结尾
+    fmt.Println(test[:3])  //0到3
+ 
+}
+</code></pre>
+<pre><code>##结果##
+[1 2 3 4 0]
+3
+[2 3]
+[1 2 3 4 0]
+[1 2 3]
+</code></pre>
+<h2 id="数组的四种初始化方式">数组的四种初始化方式</h2>
+<p>例如：</p>
+<pre><code>var s1 [3]int = [3]int{1,2,3}
+fmt.Println(&quot;s1&quot;,s1)
+var s2 [4]int = [...]int{5,6,7,8} //[...]是固定写法
+fmt.Println(&quot;s2&quot;,s2)
+var s3 = [2]int{9,10} //第一种的简化
+fmt.Println(&quot;s3&quot;,s3)
+var s4 = [...]int{3:43,1:41,0:40,2:42} //类似键值对
+fmt.Println(&quot;s4&quot;,s4)
+var s5 = new([5]int)
+s5[4] =12
+fmt.Println(&quot;s5&quot;,s5)
+</code></pre>
+<pre><code>##结果##
+s1 [1 2 3]
+s2 [5 6 7 8]
+s3 [9 10]
+s4 [40 41 42 43]
+s5 [0 0 0 0 5]
+</code></pre>
+<h2 id="数组的遍历">数组的遍历</h2>
+<p>例如：</p>
+<pre><code>var s4 = [...]int{3:43,1:41,0:40,2:42} //类似键值对
+fmt.Println(&quot;s4&quot;,s4)
+     
+for index,value := range s4{
+fmt.Println(index,value)
+}
+ 
+#结果##
+0 40
+1 41
+2 42
+3 43
+</code></pre>
+<pre><code>var s4 = [...]int{3:43,1:41,0:40,2:42} //类似键值对
+for i := 0;i &lt;len(s4);i++{
+fmt.Println(i,s4[i])
+}
+ 
+#结果##
+0 40
+1 41
+2 42
+3 43
+</code></pre>
+<h1 id="slice切片">slice切片</h1>
+<p>1、切片是数组的引用<br>
+2、切片的使用类似数组，如遍历<br>
+3、切片的长度是可变的</p>
+<h2 id="创建语法">创建语法</h2>
+<p>var 切片名 []类型<br>
+如：</p>
+<pre><code>var qiepian []int
+</code></pre>
+<h2 id="切片示例">切片示例:</h2>
+<pre><code>###例子一&lt;br&gt;var suzhu [4]int = [...]int{5,6,7,8}
+slice := suzhu[1:4] //1到4的值，不包含4
+fmt.Println(suzhu)
+fmt.Println(slice)
+fmt.Println(&quot;切片的容量&quot;,cap(slice))
+ 
+##结果
+[5 6 7 8]
+[6 7 8]
+切片的容量 3&lt;br&gt;&lt;br&gt;
+###例子二、使用make创建切片
+var slice []int = make([]int,4,10) //类型，大小(长度),容量（可选），容量必须大于长度
+slice[0] = 10
+slice[1] = 11
+fmt.Println(slice)
+ 
+##结果##
+[10 11 0 0]
+ 
+ 
+###例子三
+var slice []int = []int {2,4,6}
+fmt.Println(slice)
+ 
+##结果##
+2 4 6
+</code></pre>
+<h2 id="切片的append追加">切片的append追加</h2>
+<p>例如：</p>
+<pre><code>var slice []int = []int {2,4,6}
+fmt.Println(slice)
+//使用append直接追加切片内容（类似python list的append）
+slice = append(slice,8,10)
+fmt.Println(slice)
+slice = append(slice,slice...) //追加切片，...是固定写法
+fmt.Println(slice)
+ 
+###结果###
+[2 4 6]
+[2 4 6 8 10]
+[2 4 6 8 10 2 4 6 8 10]
+</code></pre>
+<h2 id="切片的copy操作">切片的copy操作</h2>
+<p>使用copy内置函数<br>
+例如:</p>
+<pre><code>var slice []int = []int {2,4,6}
+fmt.Println(slice)
+var slice2 []int = make([]int,5)
+fmt.Println(slice2)
+copy(slice2,slice) //将slice复制给slice2
+fmt.Println(slice)
+fmt.Println(slice2)
+ 
+##结果##
+[2 4 6]
+[0 0 0 0 0]
+[2 4 6]
+[2 4 6 0 0]
+</code></pre>
+<h2 id="使用切片改变字符串的内容">使用切片改变字符串的内容</h2>
+<pre><code>var str string = &quot;hello&quot;
+fmt.Println(str)
+arr := []byte(str)
+arr[1] = 'a' //转成字符串
+arr1 := []rune(str) //中文转换
+arr1[0] = '狗'
+fmt.Println(arr)
+str = string(arr)
+fmt.Println(str)
+str = string(arr1)
+fmt.Println(str)
+ 
+##结果##
+hello
+[104 97 108 108 111]
+hello
+狗hello
+</code></pre>
+<h1 id="map类似python的dict">map(类似python的dict)</h1>
+<p>map是key-value数据结构(类似python的dict)<br>
+map是无序存储的</p>
+<p>创建map语法<br>
+var map 变量名 map[keytype]valuetype</p>
+<p>如：</p>
+<pre><code>var m1 map[string]string
+var m2 map[string]int
+var m3 map[int]string
+var m4 map[string]map[string]string
+```　　
+
+使用例子：
+</code></pre>
+<p>package main<br>
+import &quot;fmt&quot;</p>
+<p>func main(){<br>
+var m1 map[string]string<br>
+//在使用map前,需要先make，make的作用技术给map分配数据空间<br>
+m1 = make(map[string]string)<br>
+m2 := map[string]string{  //使用方式二<br>
+&quot;a1&quot; : &quot;q1&quot;,<br>
+&quot;a2&quot; : &quot;a2&quot;,<br>
+}<br>
+m1[&quot;s1&quot;] = &quot;亚索&quot;<br>
+m1[&quot;s2&quot;] = &quot;盖伦&quot;<br>
+fmt.Println(m1)<br>
+fmt.Println(m1[&quot;s1&quot;])<br>
+fmt.Println(m2)<br>
+}</p>
+<p>###结果###<br>
+map[s1:亚索 s2:盖伦]<br>
+亚索<br>
+map[a1:q1 a2:a2]</p>
+<pre><code>
+ 
+
+map的增删改查
+增、改
+map[key] = value //没有就增加，存在就修改
+
+删
+delete(map,key)
+
+查
+map[key]   //对应的value，和python的dict一样</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[k8s hpa弹性扩容配置]]></title>
         <id>http://lvelvis.github.io/post/k8s-hpa-dan-xing-kuo-rong-pei-zhi/</id>
