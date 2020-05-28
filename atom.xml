@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-05-26T05:58:49.578Z</updated>
+    <updated>2020-05-28T10:27:26.264Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,321 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[golang笔记-json数据解析：Marshal与Unmarshal]]></title>
+        <id>http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/">
+        </link>
+        <updated>2020-05-28T10:15:31.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="简介">简介</h1>
+<p>Json(Javascript Object Nanotation)是一种数据交换格式，常用于前后端数据传输。任意一端将数据转换成json 字符串，另一端再将该字符串解析成相应的数据结构，如string类型，strcut对象等。</p>
+<p>go语言本身为我们提供了json的工具包”encoding/json”。<br>
+更多的使用方式，可以参考：https://studygolang.com/articles/6742</p>
+<h1 id="实现">实现</h1>
+<p>Json Marshal：将数据编码成json字符串<br>
+看一个简单的例子</p>
+<pre><code>type Stu struct {
+    Name  string `json:&quot;name&quot;`
+    Age   int
+    HIgh  bool
+    sex   string
+    Class *Class `json:&quot;class&quot;`
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //实例化一个数据结构，用于生成json字符串
+    stu := Stu{
+        Name: &quot;张三&quot;,
+        Age:  18,
+        HIgh: true,
+        sex:  &quot;男&quot;,
+    }
+
+    //指针变量
+    cla := new(Class)
+    cla.Name = &quot;1班&quot;
+    cla.Grade = 3
+    stu.Class=cla
+
+    //Marshal失败时err!=nil
+    jsonStu, err := json.Marshal(stu)
+    if err != nil {
+        fmt.Println(&quot;生成json字符串错误&quot;)
+    }
+
+    //jsonStu是[]byte类型，转化成string类型便于查看
+    fmt.Println(string(jsonStu))
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
+</code></pre>
+<p>从结果中可以看出</p>
+<p>只要是可导出成员（变量首字母大写），都可以转成json。因成员变量sex是不可导出的，故无法转成json。</p>
+<p>如果变量打上了json标签，如Name旁边的 <code>json:&quot;name&quot;</code> ，那么转化成的json key就用该标签“name”，否则取变量名作为key，如“Age”，“HIgh”。</p>
+<p>bool类型也是可以直接转换为json的value值。Channel， complex 以及函数不能被编码json字符串。当然，循环的数据结构也不行，它会导致marshal陷入死循环。</p>
+<p>指针变量，编码时自动转换为它所指向的值，如cla变量。<br>
+（当然，不传指针，Stu struct的成员Class如果换成Class struct类型，效果也是一模一样的。只不过指针更快，且能节省内存空间。）</p>
+<p>最后，强调一句：json编码成字符串后就是纯粹的字符串了。</p>
+<p>上面的成员变量都是已知的类型，只能接收指定的类型，比如string类型的Name只能赋值string类型的数据。<br>
+但有时为了通用性，或使代码简洁，我们希望有一种类型可以接受各种类型的数据，并进行json编码。这就用到了interface{}类型。</p>
+<p>前言：<br>
+interface{}类型其实是个空接口，即没有方法的接口。go的每一种类型都实现了该接口。因此，任何其他类型的数据都可以赋值给interface{}类型。</p>
+<pre><code>type Stu struct {
+    Name  interface{} `json:&quot;name&quot;`
+    Age   interface{}
+    HIgh  interface{}
+    sex   interface{}
+    Class interface{} `json:&quot;class&quot;`
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //与前面的例子一样
+    ......
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
+</code></pre>
+<p>从结果中可以看出，无论是string，int，bool，还是指针类型等，都可赋值给interface{}类型，且正常编码，效果与前面的例子一样。</p>
+<p>补充：<br>
+在实际项目中，编码成json串的数据结构，往往是切片类型。如下定义了一个[]StuRead类型的切片</p>
+<pre><code>//正确示范
+
+//方式1：只声明，不分配内存
+var stus1 []*StuRead
+
+//方式2：分配初始值为0的内存
+stus2 := make([]*StuRead,0)
+
+//错误示范
+//new()只能实例化一个struct对象，而[]StuRead是切片，不是对象
+stus := new([]StuRead)
+
+stu1 := StuRead{成员赋值...}
+stu2 := StuRead{成员赋值...}
+
+//由方式1和2创建的切片，都能成功追加数据
+//方式2最好分配0长度，append时会自动增长。反之指定初始长度，长度不够时不会自动增长，导致数据丢失
+stus1 := appen(stus1,stu1,stu2)
+stus2 := appen(stus2,stu1,stu2)
+
+//成功编码
+json1,_ := json.Marshal(stus1)
+json2,_ := json.Marshal(stus2)
+</code></pre>
+<p>解码时定义对应的切片接受即可</p>
+<p>Json Unmarshal：将json字符串解码到相应的数据结构<br>
+我们将上面的例子进行解码</p>
+<pre><code>type StuRead struct {
+    Name  interface{} `json:&quot;name&quot;`
+    Age   interface{}
+    HIgh  interface{}
+    sex   interface{}
+    Class interface{} `json:&quot;class&quot;`
+    Test  interface{}
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //json字符中的&quot;引号，需用\进行转义，否则编译出错
+    //json字符串沿用上面的结果，但对key进行了大小的修改，并添加了sex数据
+    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
+    str:=[]byte(data)
+
+    //1.Unmarshal的第一个参数是json字符串，第二个参数是接受json解析的数据结构。
+    //第二个参数必须是指针，否则无法接收解析的数据，如stu仍为空对象StuRead{}
+    //2.可以直接stu:=new(StuRead),此时的stu自身就是指针
+    stu:=StuRead{}
+    err:=json.Unmarshal(str,&amp;stu)
+
+    //解析失败会报错，如json字符串格式不对，缺&quot;号，缺}等。
+    if err!=nil{
+        fmt.Println(err)
+    }
+
+    fmt.Println(stu)
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{张三 18 true &lt;nil&gt; map[naME:1班 GradE:3] &lt;nil&gt;}
+</code></pre>
+<p>总结：</p>
+<p>json字符串解析时，需要一个“接收体”接受解析后的数据，且Unmarshal时接收体必须传递指针。否则解析虽不报错，但数据无法赋值到接受体中。如这里用的是StuRead{}接收。</p>
+<p>解析时，接收体可自行定义。json串中的key自动在接收体中寻找匹配的项进行赋值。匹配规则是：</p>
+<p>先查找与key一样的json标签，找到则赋值给该标签对应的变量(如Name)。<br>
+没有json标签的，就从上往下依次查找变量名与key一样的变量，如Age。或者变量名忽略大小写后与key一样的变量。如HIgh，Class。第一个匹配的就赋值，后面就算有匹配的也忽略。<br>
+(前提是该变量必需是可导出的，即首字母大写)。<br>
+不可导出的变量无法被解析（如sex变量，虽然json串中有key为sex的k-v，解析后其值仍为nil,即空值）</p>
+<p>当接收体中存在json串中匹配不了的项时，解析会自动忽略该项，该项仍保留原值。如变量Test，保留空值nil。</p>
+<p>你一定会发现，变量Class貌似没有解析为我们期待样子。因为此时的Class是个interface{}类型的变量，而json串中key为CLASS的value是个复合结构，不是可以直接解析的简单类型数据（如“张三”，18，true等）。所以解析时，由于没有指定变量Class的具体类型，json自动将value为复合结构的数据解析为map[string]interface{}类型的项。也就是说，此时的struct Class对象与StuRead中的Class变量没有半毛钱关系，故与这次的json解析没有半毛钱关系。</p>
+<p>让我们看一下这几个interface{}变量解析后的类型</p>
+<pre><code>func main() {
+    //与前边json解析的代码一致
+    ...
+    fmt.Println(stu) //打印json解析前变量类型
+    err:=json.Unmarshal(str,&amp;stu)
+    fmt.Println(&quot;--------------json 解析后-----------&quot;)
+    ... 
+    fmt.Println(stu) //打印json解析后变量类型    
+}
+
+//利用反射，打印变量类型
+func printType(stu *StuRead){
+    nameType:=reflect.TypeOf(stu.Name)
+    ageType:=reflect.TypeOf(stu.Age)
+    highType:=reflect.TypeOf(stu.HIgh)
+    sexType:=reflect.TypeOf(stu.sex)
+    classType:=reflect.TypeOf(stu.Class)
+    testType:=reflect.TypeOf(stu.Test)
+
+    fmt.Println(&quot;nameType:&quot;,nameType)
+    fmt.Println(&quot;ageType:&quot;,ageType)
+    fmt.Println(&quot;highType:&quot;,highType)
+    fmt.Println(&quot;sexType:&quot;,sexType)
+    fmt.Println(&quot;classType:&quot;,classType)
+    fmt.Println(&quot;testType:&quot;,testType)
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>nameType: &lt;nil&gt;
+ageType: &lt;nil&gt;
+highType: &lt;nil&gt;
+sexType: &lt;nil&gt;
+classType: &lt;nil&gt;
+testType: &lt;nil&gt;
+--------------json 解析后-----------
+nameType: string
+ageType: float64
+highType: bool
+sexType: &lt;nil&gt;
+classType: map[string]interface {}
+testType: &lt;nil&gt;
+</code></pre>
+<p>从结果中可见</p>
+<p>interface{}类型变量在json解析前，打印出的类型都为nil，就是没有具体类型，这是空接口（interface{}类型）的特点。</p>
+<p>json解析后，json串中value，只要是”简单数据”，都会按照默认的类型赋值，如”张三”被赋值成string类型到Name变量中，数字18对应float64，true对应bool类型。</p>
+<p>“简单数据”：是指不能再进行二次json解析的数据，如”name”:”张三”只能进行一次json解析。<br>
+“复合数据”：类似”CLASS\”:{\”naME\”:\”1班\”,\”GradE\”:3}这样的数据，是可进行二次甚至多次json解析的，因为它的value也是个可被解析的独立json。即第一次解析key为CLASS的value，第二次解析value中的key为naME和GradE的value</p>
+<p>对于”复合数据”，如果接收体中配的项被声明为interface{}类型，go都会默认解析成map[string]interface{}类型。如果我们想直接解析到struct Class对象中，可以将接受体对应的项定义为该struct类型。如下所示：</p>
+<p>type StuRead struct {<br>
+...<br>
+//普通struct类型<br>
+Class Class <code>json:&quot;class&quot;</code><br>
+//指针类型<br>
+Class *Class <code>json:&quot;class&quot;</code><br>
+}</p>
+<p>stu打印结果</p>
+<p>Class类型：{张三 18 true <nil> {1班 3} <nil>}<br>
+*Class类型：{张三 18 true <nil> 0xc42008a0c0 <nil>}</p>
+<p>可以看出，传递Class类型的指针时，stu中的Class变量存的是指针，我们可通过该指针直接访问所属的数据，如stu.Class.Name/stu.Class.Grade</p>
+<p>Class变量解析后类型</p>
+<p>classType: main.Class<br>
+classType: *main.Class<br>
+解析时，如果接受体中同时存在2个匹配的项，会发生什么呢？<br>
+测试1</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+NAMe interface{}    <code>json:&quot;name&quot;</code><br>
+}<br>
+结果1:</p>
+<pre><code>//当存在匹配的json标签时，其对应的项被赋值。
+//切记：匹配的标签可以没有，但有时最好只有一个哦
+{&lt;nil&gt; &lt;nil&gt; 张三}
+</code></pre>
+<p>测试2</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+NAMe interface{}    <code>json:&quot;name&quot;</code><br>
+NamE interface{}    <code>json:&quot;name&quot;</code><br>
+}<br>
+结果2</p>
+<pre><code>//当匹配的json标签有多个时，标签对应的项都不会被赋值。
+//忽略标签项，从上往下寻找第一个没有标签且匹配的项赋值
+{张三 &lt;nil&gt; &lt;nil&gt; &lt;nil&gt;}
+</code></pre>
+<p>测试3</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+}<br>
+结果3</p>
+<pre><code>//没有json标签时，从上往下，第一个匹配的项会被赋值哦
+{张三 &lt;nil&gt;}
+</code></pre>
+<p>测试4</p>
+<pre><code>type StuRead struct {
+    NAMe interface{}    `json:&quot;name&quot;`
+    NamE interface{}    `json:&quot;name&quot;`
+}
+</code></pre>
+<p>结果4</p>
+<pre><code>//当相同的json标签有多个，且没有不带标签的匹配项时，报错了哦
+# command-line-arguments
+src/test/b.go:48: stu.Name undefined (type *StuRead has no field or method Name, but does have NAMe)
+</code></pre>
+<p>可见，与前边说过的匹配规则是一致的。</p>
+<p>如果不想指定Class变量为具体的类型，仍想保留interface{}类型，但又希望该变量可以解析到struct Class对象中，这时候该怎么办呢？</p>
+<p>这种需求是很可能存在的，例如笔者我就碰到了</p>
+<p>办法还是有的，我们可以将该变量定义为json.RawMessage类型</p>
+<pre><code>type StuRead struct {
+    Name  interface{}
+    Age   interface{}
+    HIgh  interface{}
+    Class json.RawMessage `json:&quot;class&quot;` //注意这里
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
+    str:=[]byte(data)
+    stu:=StuRead{}
+    _:=json.Unmarshal(str,&amp;stu)
+
+    //注意这里：二次解析！
+    cla:=new(Class)
+    json.Unmarshal(stu.Class,cla)
+
+    fmt.Println(&quot;stu:&quot;,stu)
+    fmt.Println(&quot;string(stu.Class):&quot;,string(stu.Class))
+    fmt.Println(&quot;class:&quot;,cla)
+    printType(&amp;stu) //函数实现前面例子有
+}
+</code></pre>
+<p>结果</p>
+<pre><code>stu: {张三 18 true [123 34 110 97 77 69 34 58 34 49 231 143 173 34 44 34 71 114 97 100 69 34 58 51 125]}
+string(stu.Class): {&quot;naME&quot;:&quot;1班&quot;,&quot;GradE&quot;:3}
+class: &amp;{1班 3}
+nameType: string
+ageType: float64
+highType: bool
+classType: json.RawMessage
+</code></pre>
+<p>从结果中可见</p>
+<p>接收体中，被声明为json.RawMessage类型的变量在json解析时，变量值仍保留json的原值，即未被自动解析为map[string]interface{}类型。如变量Class解析后的值为：{“naME”:”1班”,”GradE”:3}</p>
+<p>从打印的类型也可以看出，在第一次json解析时，变量Class的类型是json.RawMessage。此时，我们可以对该变量进行二次json解析，因为其值仍是个独立且可解析的完整json串。我们只需再定义一个新的接受体即可，如json.Unmarshal(stu.Class,cla)</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[golang笔记-数组、切片、map]]></title>
         <id>http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/</id>
@@ -806,457 +1121,6 @@ kubectl create -f run/picalc-pipeline-run.yaml</p>
 <li><a href="https://cloud.google.com/tekton/">Tekton官网</a></li>
 <li><a href="https://github.com/knative-sample/tekton-knative/tree/b1.0?spm=ata.13261165.0.0.21213a182xyMm5&amp;file=b1.0">Tekton Demo</a></li>
 </ol>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[kubernetes搭建rook-ceph]]></title>
-        <id>http://lvelvis.github.io/post/kubernetes搭建rook-ceph/</id>
-        <link href="http://lvelvis.github.io/post/kubernetes搭建rook-ceph/">
-        </link>
-        <updated>2019-12-11T16:00:00.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="简介">简介</h1>
-<p>Rook官网：https://rook.io<br>
-Rook是云原生计算基金会(CNCF)的孵化级项目.<br>
-Rook是Kubernetes的开源云本地存储协调器，为各种存储解决方案提供平台，框架和支持，以便与云原生环境本地集成。<br>
-至于CEPH，官网在这：https://ceph.com/<br>
-ceph官方提供的helm部署，至今我没成功过，所以转向使用rook提供的方案<br>
-有道笔记原文：http://note.youdao.com/noteshare?id=281719f1f0374f787effc90067e0d5ad&amp;sub=0B59EA339D4A4769B55F008D72C1A4C0</p>
-<h1 id="环境">环境</h1>
-<pre><code>centos 7.5
-kernel 4.18.7-1.el7.elrepo.x86_64
-docker 18.06
-kubernetes v1.12.2
-    kubeadm部署：
-        网络: canal
-        DNS: coredns
-    集群成员：    
-    192.168.1.1 kube-master
-    192.168.1.2 kube-node1
-    192.168.1.3 kube-node2
-    192.168.1.4 kube-node3
-    192.168.1.5 kube-node4
-
-所有node节点准备一块200G的磁盘：/dev/sdb
-kubernetes搭建rook-ceph
-</code></pre>
-<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588233297037.png" alt="" loading="lazy"></figure>
-<h1 id="准备工作">准备工作</h1>
-<p>所有节点开启ip_forward</p>
-<pre><code>cat &lt;&lt;EOF &gt;  /etc/sysctl.d/ceph.conf
-net.ipv4.ip_forward = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-EOF
-</code></pre>
-<p>sysctl -p</p>
-<h1 id="开始部署operator">开始部署Operator</h1>
-<h2 id="部署rook-operator">部署Rook Operator</h2>
-<pre><code>cd $HOME
-git clone https://github.com/rook/rook.git
-
-cd rook
-cd cluster/examples/kubernetes/ceph
-kubectl apply -f operator.yaml
-</code></pre>
-<figure data-type="image" tabindex="2"><img src="http://lvelvis.github.io/post-images/1588233371696.png" alt="" loading="lazy"></figure>
-<h2 id="查看operator的状态">查看Operator的状态</h2>
-<p>执行apply之后稍等一会<br>
-operator会在集群内的每个主机创建两个pod:rook-discover,rook-ceph-agent</p>
-<p>kubectl -n rook-ceph-system get pod -o wide<br>
-<img src="http://lvelvis.github.io/post-images/1588233523024.png" alt="" loading="lazy"></p>
-<h2 id="给节点打标签">给节点打标签</h2>
-<p>运行ceph-mon的节点打上：ceph-mon=enabled<br>
-kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-mon=enabled<br>
-运行ceph-osd的节点，也就是存储节点，打上：ceph-osd=enabled<br>
-kubectl label nodes {kube-node1,kube-node2,kube-node3} ceph-osd=enabled<br>
-运行ceph-mgr的节点，打上：ceph-mgr=enabled<br>
-mgr只能支持一个节点运行，这是ceph跑k8s里的局限<br>
-kubectl label nodes kube-node1 ceph-mgr=enabled</p>
-<h2 id="配置clusteryaml文件">配置cluster.yaml文件</h2>
-<p>官方配置文件详解：https://rook.io/docs/rook/v0.8/ceph-cluster-crd.html<br>
-文件中有几个地方要注意：</p>
-<ul>
-<li>dataDirHostPath: 这个路径是会在宿主机上生成的，保存的是ceph的相关的配置文件，再重新生成*集群的时候要确保这个目录为空，否则mon会无法启动</li>
-<li>useAllDevices: 使用所有的设备，建议为false，否则会把宿主机所有可用的磁盘都干掉</li>
-<li>useAllNodes：使用所有的node节点，建议为false，肯定不会用k8s集群内的所有node来搭建ceph的</li>
-<li>databaseSizeMB和journalSizeMB：当磁盘大于100G的时候，就注释这俩项就行了<br>
-本次实验用到的 cluster.yaml 文件内容如下：</li>
-</ul>
-<pre><code>apiVersion: v1
-kind: Namespace
-metadata:
-  name: rook-ceph
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: rook-ceph-cluster
-  namespace: rook-ceph
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: rook-ceph-cluster
-  namespace: rook-ceph
-rules:
-- apiGroups: [&quot;&quot;]
-  resources: [&quot;configmaps&quot;]
-  verbs: [ &quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;delete&quot; ]
----
-# Allow the operator to create resources in this cluster's namespace
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: rook-ceph-cluster-mgmt
-  namespace: rook-ceph
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: rook-ceph-cluster-mgmt
-subjects:
-- kind: ServiceAccount
-  name: rook-ceph-system
-  namespace: rook-ceph-system
----
-# Allow the pods in this namespace to work with configmaps
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: rook-ceph-cluster
-  namespace: rook-ceph
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: rook-ceph-cluster
-subjects:
-- kind: ServiceAccount
-  name: rook-ceph-cluster
-  namespace: rook-ceph
----
-apiVersion: ceph.rook.io/v1beta1
-kind: Cluster
-metadata:
-  name: rook-ceph
-  namespace: rook-ceph
-spec:
-  cephVersion:
-    # The container image used to launch the Ceph daemon pods (mon, mgr, osd, mds, rgw).
-    # v12 is luminous, v13 is mimic, and v14 is nautilus.
-    # RECOMMENDATION: In production, use a specific version tag instead of the general v13 flag, which pulls the latest release and could result in different
-    # versions running within the cluster. See tags available at https://hub.docker.com/r/ceph/ceph/tags/.
-    image: ceph/ceph:v13
-    # Whether to allow unsupported versions of Ceph. Currently only luminous and mimic are supported.
-    # After nautilus is released, Rook will be updated to support nautilus.
-    # Do not set to true in production.
-    allowUnsupported: false
-  # The path on the host where configuration files will be persisted. If not specified, a kubernetes emptyDir will be created (not recommended).
-  # Important: if you reinstall the cluster, make sure you delete this directory from each host or else the mons will fail to start on the new cluster.
-  # In Minikube, the '/data' directory is configured to persist across reboots. Use &quot;/data/rook&quot; in Minikube environment.
-  dataDirHostPath: /var/lib/rook
-  # The service account under which to run the daemon pods in this cluster if the default account is not sufficient (OSDs)
-  serviceAccount: rook-ceph-cluster
-  # set the amount of mons to be started
-  # count可以定义ceph-mon运行的数量，这里默认三个就行了
-  mon:
-    count: 3
-    allowMultiplePerNode: true
-  # enable the ceph dashboard for viewing cluster status
-  # 开启ceph资源面板
-  dashboard:
-    enabled: true
-    # serve the dashboard under a subpath (useful when you are accessing the dashboard via a reverse proxy)
-    # urlPrefix: /ceph-dashboard
-  network:
-    # toggle to use hostNetwork
-    # 使用宿主机的网络进行通讯
-    # 使用宿主机的网络貌似可以让集群外的主机挂载ceph
-    # 但是我没试过，有兴趣的兄弟可以试试改成true
-    # 反正这里只是集群内用，我就不改了
-    hostNetwork: false
-  # To control where various services will be scheduled by kubernetes, use the placement configuration sections below.
-  # The example under 'all' would have all services scheduled on kubernetes nodes labeled with 'role=storage-node' and
-  # tolerate taints with a key of 'storage-node'.
-  placement:
-#    all:
-#      nodeAffinity:
-#        requiredDuringSchedulingIgnoredDuringExecution:
-#          nodeSelectorTerms:
-#          - matchExpressions:
-#            - key: role
-#              operator: In
-#              values:
-#              - storage-node
-#      podAffinity:
-#      podAntiAffinity:
-#      tolerations:
-#      - key: storage-node
-#        operator: Exists
-# The above placement information can also be specified for mon, osd, and mgr components
-#    mon:
-#    osd:
-#    mgr:
-# nodeAffinity：通过选择标签的方式，可以限制pod被调度到特定的节点上
-# 建议限制一下，为了让这几个pod不乱跑
-    mon:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: ceph-mon
-              operator: In
-              values:
-              - enabled
-    osd:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: ceph-osd
-              operator: In
-              values:
-              - enabled
-    mgr:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: ceph-mgr
-              operator: In
-              values:
-              - enabled
-  resources:
-# The requests and limits set here, allow the mgr pod to use half of one CPU core and 1 gigabyte of memory
-#    mgr:
-#      limits:
-#        cpu: &quot;500m&quot;
-#        memory: &quot;1024Mi&quot;
-#      requests:
-#        cpu: &quot;500m&quot;
-#        memory: &quot;1024Mi&quot;
-# The above example requests/limits can also be added to the mon and osd components
-#    mon:
-#    osd:
-  storage: # cluster level storage configuration and selection
-    useAllNodes: false
-    useAllDevices: false
-    deviceFilter:
-    location:
-    config:
-      # The default and recommended storeType is dynamically set to bluestore for devices and filestore for directories.
-      # Set the storeType explicitly only if it is required not to use the default.
-      # storeType: bluestore
-      # databaseSizeMB: &quot;1024&quot; # this value can be removed for environments with normal sized disks (100 GB or larger)
-      # journalSizeMB: &quot;1024&quot;  # this value can be removed for environments with normal sized disks (20 GB or larger)
-# Cluster level list of directories to use for storage. These values will be set for all nodes that have no `directories` set.
-#    directories:
-#    - path: /rook/storage-dir
-# Individual nodes and their config can be specified as well, but 'useAllNodes' above must be set to false. Then, only the named
-# nodes below will be used as storage resources.  Each node's 'name' field should match their 'kubernetes.io/hostname' label.
-#建议磁盘配置方式如下：
-#name: 选择一个节点，节点名字为kubernetes.io/hostname的标签，也就是kubectl get nodes看到的名字
-#devices: 选择磁盘设置为OSD
-# - name: &quot;sdb&quot;:将/dev/sdb设置为osd
-    nodes:
-    - name: &quot;kube-node1&quot;
-      devices:
-      - name: &quot;sdb&quot;
-    - name: &quot;kube-node2&quot;
-      devices:
-      - name: &quot;sdb&quot;
-    - name: &quot;kube-node3&quot;
-      devices:
-      - name: &quot;sdb&quot;
-
-#      directories: # specific directories to use for storage can be specified for each node
-#      - path: &quot;/rook/storage-dir&quot;
-#      resources:
-#        limits:
-#          cpu: &quot;500m&quot;
-#          memory: &quot;1024Mi&quot;
-#        requests:
-#          cpu: &quot;500m&quot;
-#          memory: &quot;1024Mi&quot;
-#    - name: &quot;172.17.4.201&quot;
-#      devices: # specific devices to use for storage can be specified for each node
-#      - name: &quot;sdb&quot;
-#      - name: &quot;sdc&quot;
-#      config: # configuration can be specified at the node level which overrides the cluster level config
-#        storeType: filestore
-#    - name: &quot;172.17.4.301&quot;
-#      deviceFilter: &quot;^sd.&quot;
-</code></pre>
-<h2 id="开始部署ceph">开始部署ceph</h2>
-<p>部署ceph<br>
-kubectl apply -f cluster.yaml<br>
-cluster会在rook-ceph这个namesapce创建资源<br>
-看到所有的pod都Running就行了<br>
-注意看一下pod分布的宿主机，跟我们打标签的主机是一致的<br>
-kubectl -n rook-ceph get pod -o wide<br>
-<img src="http://lvelvis.github.io/post-images/1588233756856.png" alt="" loading="lazy"></p>
-<p>切换到其他主机看一下磁盘</p>
-<p>切换到kube-node1<br>
-lsblk<br>
-<img src="http://lvelvis.github.io/post-images/1588233803458.png" alt="" loading="lazy"></p>
-<h2 id="配置ceph-dashboard">配置ceph dashboard</h2>
-<p>看一眼dashboard在哪个service上<br>
-kubectl -n rook-ceph get service<br>
-可以看到dashboard监听了8443端口<br>
-<img src="http://lvelvis.github.io/post-images/1588233853544.png" alt="" loading="lazy"></p>
-<p>创建个nodeport类型的service以便集群外部访问<br>
-kubectl apply -f dashboard-external-https.yaml</p>
-<p>查看一下nodeport在哪个端口<br>
-kubectl -n rook-ceph get service<br>
-<img src="http://lvelvis.github.io/post-images/1588233909644.png" alt="" loading="lazy"></p>
-<p>找出Dashboard的登陆账号和密码<br>
-MGR_POD=<code>kubectl get pod -n rook-ceph | grep mgr | awk '{print $1}'</code><br>
-kubectl -n rook-ceph logs $MGR_POD | grep password<br>
-<img src="http://lvelvis.github.io/post-images/1588233955731.png" alt="" loading="lazy"></p>
-<p>打开浏览器输入任意一个Node的IP+nodeport端口<br>
-这里我的就是：https://192.168.1.2:30290<br>
-<img src="http://lvelvis.github.io/post-images/1588234024005.png" alt="" loading="lazy"><br>
-<img src="http://lvelvis.github.io/post-images/1588234065656.png" alt="" loading="lazy"></p>
-<h2 id="配置ceph为storageclass">配置ceph为storageclass</h2>
-<p>官方给了一个样本文件：storageclass.yaml<br>
-这个文件使用的是 RBD 块存储<br>
-pool创建详解：https://rook.io/docs/rook/v0.8/ceph-pool-crd.html</p>
-<pre><code>apiVersion: ceph.rook.io/v1beta1
-kind: Pool
-metadata:
-  #这个name就是创建成ceph pool之后的pool名字
-  name: replicapool
-  namespace: rook-ceph
-spec:
-  replicated:
-    size: 1
-  # size 池中数据的副本数,1就是不保存任何副本
-  failureDomain: osd
-  #  failureDomain：数据块的故障域，
-  #  值为host时，每个数据块将放置在不同的主机上
-  #  值为osd时，每个数据块将放置在不同的osd上
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-   name: ceph
-   # StorageClass的名字，pvc调用时填的名字
-provisioner: ceph.rook.io/block
-parameters:
-  pool: replicapool
-  # Specify the namespace of the rook cluster from which to create volumes.
-  # If not specified, it will use `rook` as the default namespace of the cluster.
-  # This is also the namespace where the cluster will be
-  clusterNamespace: rook-ceph
-  # Specify the filesystem type of the volume. If not specified, it will use `ext4`.
-  fstype: xfs
-# 设置回收策略默认为：Retain
-reclaimPolicy: Retain
-</code></pre>
-<h2 id="创建storageclass">创建StorageClass</h2>
-<p>kubectl apply -f storageclass.yaml<br>
-kubectl get storageclasses.storage.k8s.io  -n rook-ceph<br>
-kubectl describe storageclasses.storage.k8s.io  -n rook-ceph<br>
-kubernetes搭建rook-ceph</p>
-<p>创建个nginx pod尝试挂载</p>
-<pre><code>cat &lt;&lt; EOF &gt; nginx.yaml
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nginx-pvc
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 1Gi
-  storageClassName: ceph
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-spec:
-  selector:
-    app: nginx
-  ports: 
-  - port: 80
-    name: nginx-port
-    targetPort: 80
-    protocol: TCP
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      name: nginx
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - mountPath: /html
-          name: http-file
-      volumes:
-      - name: http-file
-        persistentVolumeClaim:
-          claimName: nginx-pvc
-EOF
-</code></pre>
-<p>kubectl apply -f nginx.yaml<br>
-查看pv,pvc是否创建了<br>
-kubectl get pv,pvc</p>
-<p>看一下nginx这个pod也运行了<br>
-kubectl get pod</p>
-<p>删除这个pod,看pv是否还存在<br>
-kubectl delete -f nginx.yaml</p>
-<p>kubectl get pv,pvc<br>
-可以看到，pod和pvc都已经被删除了，但是pv还在！！！</p>
-<h2 id="添加新节点进入集群">添加新节点进入集群</h2>
-<p>这次我们要把node4添加进集群，先打标签<br>
-kubectl label nodes kube-node4 ceph-osd=enabled<br>
-重新编辑cluster.yaml文件<br>
-原来的基础上添加node4的信息</p>
-<p>cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
-vi cluster.yam<br>
-<img src="http://lvelvis.github.io/post-images/1588234207475.png" alt="" loading="lazy"></p>
-<p>apply一下cluster.yaml文件<br>
-kubectl apply -f cluster.yaml</p>
-<p>盯着rook-ceph名称空间,集群会自动添加node4进来<br>
-kubectl -n rook-ceph get pod -o wide -w<br>
-kubectl -n rook-ceph get pod -o wide<br>
-<img src="http://lvelvis.github.io/post-images/1588234283568.png" alt="" loading="lazy"><br>
-<img src="http://lvelvis.github.io/post-images/1588234307875.png" alt="" loading="lazy"><br>
-去node4节点看一下磁盘<br>
-lsblk<br>
-<img src="http://lvelvis.github.io/post-images/1588234334204.png" alt="" loading="lazy"></p>
-<h2 id="删除一个节点">删除一个节点</h2>
-<p>去掉node3的标签<br>
-kubectl label nodes kube-node3 ceph-osd-<br>
-重新编辑cluster.yaml文件<br>
-删除node3的信息<br>
-cd $HOME/rook/cluster/examples/kubernetes/ceph/<br>
-vi cluster.yam<br>
-<img src="http://lvelvis.github.io/post-images/1588234380826.png" alt="" loading="lazy"></p>
-<p>apply一下cluster.yaml文件<br>
-kubectl apply -f cluster.yaml<br>
-<img src="http://lvelvis.github.io/post-images/1588234493936.png" alt="" loading="lazy"></p>
-<p>kubectl -n rook-ceph get pod -o wide<br>
-<img src="http://lvelvis.github.io/post-images/1588234548709.png" alt="" loading="lazy"><br>
-<img src="http://lvelvis.github.io/post-images/1588234579591.png" alt="" loading="lazy"><br>
-最后记得删除宿主机的/var/lib/rook文件夹</p>
 ]]></content>
     </entry>
 </feed>

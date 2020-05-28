@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>lvelvis</title>
+<title>golang笔记-json数据解析：Marshal与Unmarshal | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1590661638509">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,6 +29,8 @@
 
 
 
+  <meta name="description" content="golang笔记-json数据解析：Marshal与Unmarshal" />
+  <meta name="keywords" content="golang" />
 </head>
 
 <body>
@@ -158,10 +160,26 @@
   <div class="main-continer">
     
     <div
-      class="section-layout bg-color mist">
+      class="section-layout mist bg-color">
       <div class="section-layout-wrapper">
-        <div id="sidebarMeta" class="sidebar">
-    
+        
+
+<div class="sidebar">
+  
+    <div class="sidebar-box box-shadow-wrapper  right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body mist" id="sidebar_body">
+        
+          
+            <div class="post-side-meta" id="post_side_meta">
+              
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -224,112 +242,718 @@
 
 
 </div>
+            </div>
+            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
+              <div class="toc-box right-motion">
+  <div class="toc-wrapper auto-number auto"
+    id="toc_wrapper">
+    <ul class="markdownIt-TOC">
+<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
+<li><a href="#%E5%AE%9E%E7%8E%B0">实现</a></li>
+</ul>
+
+  </div>
 </div>
+
 <script>
-  let sidebarMeta = document.querySelector('#sidebarMeta');
-  let scheme = 'mist';
-  let sidebarWrapper = document.querySelector('.sidebar-wrapper');
-  if (sidebarMeta && (scheme === 'pisces' || scheme === 'gemini')) {
-    document.addEventListener('scroll', function(e) {
-      if (document.scrollingElement.scrollTop > parseInt(sidebarMeta.style.marginTop) + 10) {
-        sidebarWrapper.classList.add('home-sidebar-fixed')
-      } else {
-        sidebarWrapper.classList.remove('home-sidebar-fixed')
+
+  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
+  let active = 'active-show', activeClass = 'active-current';
+  let tocWrapper = document.querySelector('#toc_wrapper');
+  let tocContent = tocWrapper.children[0];
+  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
+
+  function addTocNumber(elem, deep) {
+    if (!elem) {
+      return;
+    }
+    let prop = elem.__proto__;
+
+    if (prop === HTMLUListElement.prototype) {
+      for (let i = 0; i < elem.children.length; i++) {
+        addTocNumber(elem.children[i], deep + (i + 1) + '.');
       }
+    } else if (prop === HTMLLIElement.prototype) {
+      // 保存li元素
+      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
+        lList.push(elem);
+      }
+      for (let i = 0; i < elem.children.length; i++) {
+        let cur = elem.children[i];
+        if (cur.__proto__ === HTMLAnchorElement.prototype) {
+          if (autoNumber) {
+            cur.text = deep + ' ' + cur.text;
+          }
+        } else if (cur.__proto__ === HTMLUListElement.prototype) {
+          addTocNumber(cur, deep);
+        }
+      }
+    }
+  }
+
+  function removeParentActiveClass() {
+    let parents = tocContent.querySelectorAll('.' + active)
+    parents.forEach(function (elem) {
+      elem.classList.remove(active);
     });
   }
-  </script>
-        <div class="section-box tag-line box-shadow-wrapper">
-          <section class="section tags-section posts-expand bg-color">
-            <div class="padding-wrapper">
-  <div class="tag-timeline-box">
-    <div class="tag-timeline-wrapper">
-      <div class="tag-timeline-title">
-        <h2>
-          hpa
-          <small>标签</small>
-        </h2>
+
+  function addActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.add(activeClass);
+    }
+  }
+
+  function removeActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.remove(activeClass);
+    }
+  }
+
+  function addActiveLiElemment(elem, parent) {
+    if (!elem || elem === parent) {
+      return;
+    } else {
+      if (elem.__proto__ === HTMLLIElement.prototype) {
+        elem.classList.add(active);
+      }
+      addActiveLiElemment(elem.parentElement, parent);
+    }
+  }
+
+  function showToc() {
+    if (tocWrapper) {
+      postBody = document.querySelector('#post_body');
+      for (let i = 0; i < postBody.children.length; i++) {
+        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
+          hList.push(postBody.children[i]);
+        }
+      }
+      if (tocWrapper.classList.contains('compress')) {
+        tocContent.classList.add('closed');
+      } else if (tocWrapper.classList.contains('no_compress')) {
+        tocContent.classList.add('expanded');
+      } else {
+        if (hList.length > 10) {
+          active = 'active-hidden'
+          tocContent.classList.add('closed');
+        } else {
+          tocContent.classList.add('expanded');
+        }
+      }
+    }
+  }
+
+  (function () {
+    // 处理不是从#一级标题开始目录
+    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
+      let con = tocContent.children[0].children[0];
+      tocContent.innerHTML = con.innerHTML;
+    }
+    let markdownItTOC = document.querySelector('.markdownIt-TOC');
+    let innerHeight = window.innerHeight;
+    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
+    addTocNumber(tocContent, '');
+  })();
+
+  document.addEventListener('scroll', function (e) {
+    if (lList.length <= 0) {
+      return;
+    }
+    let scrollTop = document.scrollingElement.scrollTop + 10;
+    let dir;
+
+    if (lastTop - scrollTop > 0) {
+      dir = 'up';
+    } else {
+      dir = 'down';
+    }
+
+    lastTop = scrollTop;
+    if (scrollTop <= 0) {
+      if (lastIndex >= 0 && lastIndex < hList.length) {
+        lList[lastIndex].classList.remove(activeClass);
+      }
+      return;
+    }
+
+    let current = 0, hasFind = false;
+    for (let i = 0; i < hList.length; i++) {
+      if (hList[i].offsetTop > scrollTop) {
+        current = i;
+        hasFind = true;
+        break;
+      }
+    }
+    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
+      current = hList.length - 1;
+    } else {
+      current--;
+    }
+    if (dir === 'down') {
+      if (current > lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex)
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    } else {
+      if (current < lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex);
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    }
+  });
+
+
+  window.addEventListener('load', function () {
+    showToc();
+    document.querySelector('#sidebar').style = 'display: block;';
+    tocWrapper.classList.add('toc-active');
+    setTimeout(function () {
+      if ("createEvent" in document) {
+        let evt = document.createEvent("HTMLEvents");
+        evt.initEvent("scroll", false, true);
+        document.dispatchEvent(evt);
+      }
+      else {
+        document.fireEvent("scroll");
+      }
+    }, 500)
+  })
+
+</script>
+            </div>
+          
+        
       </div>
+    </div>
+  
+</div>
+<script>
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
+      }
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
+  }
+
+  postToc && postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+  if (sidebarBody) {
+    if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+      let hasFix = false;
+      let scrollEl = document.querySelector('.main-continer');
+      let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+      window.addEventListener('scroll', function(e) {
+        if (document.scrollingElement.scrollTop >= limitTop) {
+          if (!hasFix) {
+            sidebar.classList.add('sidebar-fixed');
+            hasFix = true;
+          }
+        } else {
+          if (hasFix) {
+            sidebar.classList.remove('sidebar-fixed');
+            hasFix = false;
+          }
+        }
+      });
+    }
+  }
+  
+</script>
+        <div class="section-box box-shadow-wrapper">
+          <div class="section bg-color post post-page">
+            <header class="post-header">
+  <h1 class="post-title">
+    <a class="post-title-link" href="http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/">
+      golang笔记-json数据解析：Marshal与Unmarshal
+    </a>
+  </h1>
+  <div class="post-meta">
+    
+    <span class="meta-item pc-show">
+      <i class="fa fa-calendar-o"></i>
+      <span>发布于</span>
+      <span>2020-05-28</span>
+      <span class="post-meta-divider pc-show">|</span>
+    </span>
+    
+    <span class="meta-item">
+      <i class="fa fa-folder-o"></i>
+      <span class="pc-show">分类于</span>
       
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      <a href="http://lvelvis.github.io/post/k8s-hpa-dan-xing-kuo-rong-pei-zhi/">
-        <div class="motion-warpper">
-          <div class="tag-post-node">
-            <h1>
-              05-19
-              <small>k8s hpa弹性扩容配置</small>
-            </h1>
-          </div>
-        </div>
+      <a href="http://lvelvis.github.io/tag/oHQV9cP9p/">
+        <span>golang</span>
       </a>
       
       
+    </span>
+    <span class="post-meta-divider">|</span>
+    
+    <span class="meta-item">
+      <i class="fa fa-clock-o"></i>
+      <span>13分钟</span>
+    </span>
+    <span class="meta-item">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-file-word-o"></i>
+      <span>2981<span class="pc-show">字数</span></span>
+    </span>
+    
+    
+    
+    <span id="/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/" data-flag-title="golang笔记-json数据解析：Marshal与Unmarshal" class="meta-item pc-show leancloud_visitors">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-eye"></i>
+      <span>浏览量：<span class="leancloud-visitors-count"></span></span>
+    </span>
+    
+  </div>
+</header>
+            <div class="post-body next-md-body" id="post_body">
+              <h1 id="简介">简介</h1>
+<p>Json(Javascript Object Nanotation)是一种数据交换格式，常用于前后端数据传输。任意一端将数据转换成json 字符串，另一端再将该字符串解析成相应的数据结构，如string类型，strcut对象等。</p>
+<p>go语言本身为我们提供了json的工具包”encoding/json”。<br>
+更多的使用方式，可以参考：https://studygolang.com/articles/6742</p>
+<h1 id="实现">实现</h1>
+<p>Json Marshal：将数据编码成json字符串<br>
+看一个简单的例子</p>
+<pre><code>type Stu struct {
+    Name  string `json:&quot;name&quot;`
+    Age   int
+    HIgh  bool
+    sex   string
+    Class *Class `json:&quot;class&quot;`
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //实例化一个数据结构，用于生成json字符串
+    stu := Stu{
+        Name: &quot;张三&quot;,
+        Age:  18,
+        HIgh: true,
+        sex:  &quot;男&quot;,
+    }
+
+    //指针变量
+    cla := new(Class)
+    cla.Name = &quot;1班&quot;
+    cla.Grade = 3
+    stu.Class=cla
+
+    //Marshal失败时err!=nil
+    jsonStu, err := json.Marshal(stu)
+    if err != nil {
+        fmt.Println(&quot;生成json字符串错误&quot;)
+    }
+
+    //jsonStu是[]byte类型，转化成string类型便于查看
+    fmt.Println(string(jsonStu))
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
+</code></pre>
+<p>从结果中可以看出</p>
+<p>只要是可导出成员（变量首字母大写），都可以转成json。因成员变量sex是不可导出的，故无法转成json。</p>
+<p>如果变量打上了json标签，如Name旁边的 <code>json:&quot;name&quot;</code> ，那么转化成的json key就用该标签“name”，否则取变量名作为key，如“Age”，“HIgh”。</p>
+<p>bool类型也是可以直接转换为json的value值。Channel， complex 以及函数不能被编码json字符串。当然，循环的数据结构也不行，它会导致marshal陷入死循环。</p>
+<p>指针变量，编码时自动转换为它所指向的值，如cla变量。<br>
+（当然，不传指针，Stu struct的成员Class如果换成Class struct类型，效果也是一模一样的。只不过指针更快，且能节省内存空间。）</p>
+<p>最后，强调一句：json编码成字符串后就是纯粹的字符串了。</p>
+<p>上面的成员变量都是已知的类型，只能接收指定的类型，比如string类型的Name只能赋值string类型的数据。<br>
+但有时为了通用性，或使代码简洁，我们希望有一种类型可以接受各种类型的数据，并进行json编码。这就用到了interface{}类型。</p>
+<p>前言：<br>
+interface{}类型其实是个空接口，即没有方法的接口。go的每一种类型都实现了该接口。因此，任何其他类型的数据都可以赋值给interface{}类型。</p>
+<pre><code>type Stu struct {
+    Name  interface{} `json:&quot;name&quot;`
+    Age   interface{}
+    HIgh  interface{}
+    sex   interface{}
+    Class interface{} `json:&quot;class&quot;`
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //与前面的例子一样
+    ......
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
+</code></pre>
+<p>从结果中可以看出，无论是string，int，bool，还是指针类型等，都可赋值给interface{}类型，且正常编码，效果与前面的例子一样。</p>
+<p>补充：<br>
+在实际项目中，编码成json串的数据结构，往往是切片类型。如下定义了一个[]StuRead类型的切片</p>
+<pre><code>//正确示范
+
+//方式1：只声明，不分配内存
+var stus1 []*StuRead
+
+//方式2：分配初始值为0的内存
+stus2 := make([]*StuRead,0)
+
+//错误示范
+//new()只能实例化一个struct对象，而[]StuRead是切片，不是对象
+stus := new([]StuRead)
+
+stu1 := StuRead{成员赋值...}
+stu2 := StuRead{成员赋值...}
+
+//由方式1和2创建的切片，都能成功追加数据
+//方式2最好分配0长度，append时会自动增长。反之指定初始长度，长度不够时不会自动增长，导致数据丢失
+stus1 := appen(stus1,stu1,stu2)
+stus2 := appen(stus2,stu1,stu2)
+
+//成功编码
+json1,_ := json.Marshal(stus1)
+json2,_ := json.Marshal(stus2)
+</code></pre>
+<p>解码时定义对应的切片接受即可</p>
+<p>Json Unmarshal：将json字符串解码到相应的数据结构<br>
+我们将上面的例子进行解码</p>
+<pre><code>type StuRead struct {
+    Name  interface{} `json:&quot;name&quot;`
+    Age   interface{}
+    HIgh  interface{}
+    sex   interface{}
+    Class interface{} `json:&quot;class&quot;`
+    Test  interface{}
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    //json字符中的&quot;引号，需用\进行转义，否则编译出错
+    //json字符串沿用上面的结果，但对key进行了大小的修改，并添加了sex数据
+    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
+    str:=[]byte(data)
+
+    //1.Unmarshal的第一个参数是json字符串，第二个参数是接受json解析的数据结构。
+    //第二个参数必须是指针，否则无法接收解析的数据，如stu仍为空对象StuRead{}
+    //2.可以直接stu:=new(StuRead),此时的stu自身就是指针
+    stu:=StuRead{}
+    err:=json.Unmarshal(str,&amp;stu)
+
+    //解析失败会报错，如json字符串格式不对，缺&quot;号，缺}等。
+    if err!=nil{
+        fmt.Println(err)
+    }
+
+    fmt.Println(stu)
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>{张三 18 true &lt;nil&gt; map[naME:1班 GradE:3] &lt;nil&gt;}
+</code></pre>
+<p>总结：</p>
+<p>json字符串解析时，需要一个“接收体”接受解析后的数据，且Unmarshal时接收体必须传递指针。否则解析虽不报错，但数据无法赋值到接受体中。如这里用的是StuRead{}接收。</p>
+<p>解析时，接收体可自行定义。json串中的key自动在接收体中寻找匹配的项进行赋值。匹配规则是：</p>
+<p>先查找与key一样的json标签，找到则赋值给该标签对应的变量(如Name)。<br>
+没有json标签的，就从上往下依次查找变量名与key一样的变量，如Age。或者变量名忽略大小写后与key一样的变量。如HIgh，Class。第一个匹配的就赋值，后面就算有匹配的也忽略。<br>
+(前提是该变量必需是可导出的，即首字母大写)。<br>
+不可导出的变量无法被解析（如sex变量，虽然json串中有key为sex的k-v，解析后其值仍为nil,即空值）</p>
+<p>当接收体中存在json串中匹配不了的项时，解析会自动忽略该项，该项仍保留原值。如变量Test，保留空值nil。</p>
+<p>你一定会发现，变量Class貌似没有解析为我们期待样子。因为此时的Class是个interface{}类型的变量，而json串中key为CLASS的value是个复合结构，不是可以直接解析的简单类型数据（如“张三”，18，true等）。所以解析时，由于没有指定变量Class的具体类型，json自动将value为复合结构的数据解析为map[string]interface{}类型的项。也就是说，此时的struct Class对象与StuRead中的Class变量没有半毛钱关系，故与这次的json解析没有半毛钱关系。</p>
+<p>让我们看一下这几个interface{}变量解析后的类型</p>
+<pre><code>func main() {
+    //与前边json解析的代码一致
+    ...
+    fmt.Println(stu) //打印json解析前变量类型
+    err:=json.Unmarshal(str,&amp;stu)
+    fmt.Println(&quot;--------------json 解析后-----------&quot;)
+    ... 
+    fmt.Println(stu) //打印json解析后变量类型    
+}
+
+//利用反射，打印变量类型
+func printType(stu *StuRead){
+    nameType:=reflect.TypeOf(stu.Name)
+    ageType:=reflect.TypeOf(stu.Age)
+    highType:=reflect.TypeOf(stu.HIgh)
+    sexType:=reflect.TypeOf(stu.sex)
+    classType:=reflect.TypeOf(stu.Class)
+    testType:=reflect.TypeOf(stu.Test)
+
+    fmt.Println(&quot;nameType:&quot;,nameType)
+    fmt.Println(&quot;ageType:&quot;,ageType)
+    fmt.Println(&quot;highType:&quot;,highType)
+    fmt.Println(&quot;sexType:&quot;,sexType)
+    fmt.Println(&quot;classType:&quot;,classType)
+    fmt.Println(&quot;testType:&quot;,testType)
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>nameType: &lt;nil&gt;
+ageType: &lt;nil&gt;
+highType: &lt;nil&gt;
+sexType: &lt;nil&gt;
+classType: &lt;nil&gt;
+testType: &lt;nil&gt;
+--------------json 解析后-----------
+nameType: string
+ageType: float64
+highType: bool
+sexType: &lt;nil&gt;
+classType: map[string]interface {}
+testType: &lt;nil&gt;
+</code></pre>
+<p>从结果中可见</p>
+<p>interface{}类型变量在json解析前，打印出的类型都为nil，就是没有具体类型，这是空接口（interface{}类型）的特点。</p>
+<p>json解析后，json串中value，只要是”简单数据”，都会按照默认的类型赋值，如”张三”被赋值成string类型到Name变量中，数字18对应float64，true对应bool类型。</p>
+<p>“简单数据”：是指不能再进行二次json解析的数据，如”name”:”张三”只能进行一次json解析。<br>
+“复合数据”：类似”CLASS\”:{\”naME\”:\”1班\”,\”GradE\”:3}这样的数据，是可进行二次甚至多次json解析的，因为它的value也是个可被解析的独立json。即第一次解析key为CLASS的value，第二次解析value中的key为naME和GradE的value</p>
+<p>对于”复合数据”，如果接收体中配的项被声明为interface{}类型，go都会默认解析成map[string]interface{}类型。如果我们想直接解析到struct Class对象中，可以将接受体对应的项定义为该struct类型。如下所示：</p>
+<p>type StuRead struct {<br>
+...<br>
+//普通struct类型<br>
+Class Class <code>json:&quot;class&quot;</code><br>
+//指针类型<br>
+Class *Class <code>json:&quot;class&quot;</code><br>
+}</p>
+<p>stu打印结果</p>
+<p>Class类型：{张三 18 true <nil> {1班 3} <nil>}<br>
+*Class类型：{张三 18 true <nil> 0xc42008a0c0 <nil>}</p>
+<p>可以看出，传递Class类型的指针时，stu中的Class变量存的是指针，我们可通过该指针直接访问所属的数据，如stu.Class.Name/stu.Class.Grade</p>
+<p>Class变量解析后类型</p>
+<p>classType: main.Class<br>
+classType: *main.Class<br>
+解析时，如果接受体中同时存在2个匹配的项，会发生什么呢？<br>
+测试1</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+NAMe interface{}    <code>json:&quot;name&quot;</code><br>
+}<br>
+结果1:</p>
+<pre><code>//当存在匹配的json标签时，其对应的项被赋值。
+//切记：匹配的标签可以没有，但有时最好只有一个哦
+{&lt;nil&gt; &lt;nil&gt; 张三}
+</code></pre>
+<p>测试2</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+NAMe interface{}    <code>json:&quot;name&quot;</code><br>
+NamE interface{}    <code>json:&quot;name&quot;</code><br>
+}<br>
+结果2</p>
+<pre><code>//当匹配的json标签有多个时，标签对应的项都不会被赋值。
+//忽略标签项，从上往下寻找第一个没有标签且匹配的项赋值
+{张三 &lt;nil&gt; &lt;nil&gt; &lt;nil&gt;}
+</code></pre>
+<p>测试3</p>
+<p>type StuRead struct {<br>
+NAme interface{}<br>
+Name  interface{}<br>
+}<br>
+结果3</p>
+<pre><code>//没有json标签时，从上往下，第一个匹配的项会被赋值哦
+{张三 &lt;nil&gt;}
+</code></pre>
+<p>测试4</p>
+<pre><code>type StuRead struct {
+    NAMe interface{}    `json:&quot;name&quot;`
+    NamE interface{}    `json:&quot;name&quot;`
+}
+</code></pre>
+<p>结果4</p>
+<pre><code>//当相同的json标签有多个，且没有不带标签的匹配项时，报错了哦
+# command-line-arguments
+src/test/b.go:48: stu.Name undefined (type *StuRead has no field or method Name, but does have NAMe)
+</code></pre>
+<p>可见，与前边说过的匹配规则是一致的。</p>
+<p>如果不想指定Class变量为具体的类型，仍想保留interface{}类型，但又希望该变量可以解析到struct Class对象中，这时候该怎么办呢？</p>
+<p>这种需求是很可能存在的，例如笔者我就碰到了</p>
+<p>办法还是有的，我们可以将该变量定义为json.RawMessage类型</p>
+<pre><code>type StuRead struct {
+    Name  interface{}
+    Age   interface{}
+    HIgh  interface{}
+    Class json.RawMessage `json:&quot;class&quot;` //注意这里
+}
+
+type Class struct {
+    Name  string
+    Grade int
+}
+
+func main() {
+    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
+    str:=[]byte(data)
+    stu:=StuRead{}
+    _:=json.Unmarshal(str,&amp;stu)
+
+    //注意这里：二次解析！
+    cla:=new(Class)
+    json.Unmarshal(stu.Class,cla)
+
+    fmt.Println(&quot;stu:&quot;,stu)
+    fmt.Println(&quot;string(stu.Class):&quot;,string(stu.Class))
+    fmt.Println(&quot;class:&quot;,cla)
+    printType(&amp;stu) //函数实现前面例子有
+}
+</code></pre>
+<p>结果</p>
+<pre><code>stu: {张三 18 true [123 34 110 97 77 69 34 58 34 49 231 143 173 34 44 34 71 114 97 100 69 34 58 51 125]}
+string(stu.Class): {&quot;naME&quot;:&quot;1班&quot;,&quot;GradE&quot;:3}
+class: &amp;{1班 3}
+nameType: string
+ageType: float64
+highType: bool
+classType: json.RawMessage
+</code></pre>
+<p>从结果中可见</p>
+<p>接收体中，被声明为json.RawMessage类型的变量在json解析时，变量值仍保留json的原值，即未被自动解析为map[string]interface{}类型。如变量Class解析后的值为：{“naME”:”1班”,”GradE”:3}</p>
+<p>从打印的类型也可以看出，在第一次json解析时，变量Class的类型是json.RawMessage。此时，我们可以对该变量进行二次json解析，因为其值仍是个独立且可解析的完整json串。我们只需再定义一个新的接受体即可，如json.Unmarshal(stu.Class,cla)</p>
+
+            </div>
+            <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong>本文作者：</strong>
+      lvelvis
+    </li>
+    <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/" title="golang笔记-json数据解析：Marshal与Unmarshal">http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong>
+      本博客所有文章除特别声明外，均采用<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i> BY-NC-SA</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+  <div class="tags">
+    
+      <a href="http://lvelvis.github.io/tag/oHQV9cP9p/"># golang</a>
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
       
+    </div>
+    <div class="nav-next">
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+        <a class="nav-pc-next" title="golang笔记-数组、切片、map" href="http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/">golang笔记-数组、切片、map</a>
+        <a class="nav-mobile-next" title="golang笔记-数组、切片、map" href="http://lvelvis.github.io/post/golang-bi-ji-shu-zu-qie-pian-map/">下一篇</a>
+        <i class="fa fa-chevron-right"></i>
       
     </div>
   </div>
 </div>
-          </section>
+            
+  <script src="https://cdn.jsdelivr.net/npm/valine@1.4.4/dist/Valine.min.js"></script>
+<div id="vcomments" style="padding: 10px 0px 0px 0px"></div>
+
+<style>
+  .v .veditor {
+    min-height: 10rem;
+    background-image: url('https://upimage.alexhchu.com/2020/04/21/47eda59424daa.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: right;
+    background-color: rgba(255, 255, 255, 0);
+    resize: none;
+  }
+
+  .v .vwrap {
+    border: 1px solid #000 !important;
+  }
+
+  .v .vbtn {
+    padding: .4rem 1.2rem !important;
+    border-color: #fff !important;
+    background-color: #49b1f5 !important;
+    color: #fff !important;
+    font-size: .7rem !important;
+  }
+
+  .v .vcards .vcard .vh .vmeta .vat {
+    padding: 0 .8rem !important;
+    border: 1px solid #00c4b6 !important;
+    border-radius: 5px !important;
+    color: #00c4b6 !important;
+  }
+</style>
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'q6RNtDXsSlHgt7Wml6Krh1My-gzGzoHsz',
+    appKey: 'XVXX46bo5q1RnjaGrExJEXOm',
+    avatar: 'identicon',
+    placeholder: '',
+    pageSize: '10',
+    lang: 'zh-cn',
+    visitor: 'true' === 'true',
+    highlight: 'true' === 'true',
+    avatarForce: 'true' === 'true',
+  });
+</script>
+
+          </div>
         </div>
       </div>
     </div>
@@ -1058,6 +1682,36 @@ Yellow;"><b><?php echo $conf['xbmz']?></b></font></h2></marquee>
   // 代码高亮
   hljs.initHighlightingOnLoad();
 
+</script>
+    <div class="light-box" id="light_box"></div>
+<script>
+  let imgs = document.querySelectorAll('.post-body img');
+  let lightBox = document.querySelector('#light_box');
+  lightBox.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+  })
+  lightBox.addEventListener('mousewheel', (e) => {
+    e.preventDefault()
+  })
+  let width = window.innerWidth * 0.8;
+  lightBox.onclick = () => {
+    let img = lightBox.querySelector('img');
+    lightBox.style = '';
+    img && img.remove();
+  }
+  imgs.forEach(item => {
+    item.onclick = function (e) {
+      let lightImg = document.createElement('img');
+      lightImg.src = this.src;
+      lightBox.style = `height: 100%; opacity: 1; background-color: rgba(0, 0, 0, 0.5);cursor: zoom-out;`;
+      lightImg.style = `width: ${width}px; border: 1px solid #fff; border-radius: 2px;`;
+      lightImg.onclick = function () {
+        lightBox.style = '';
+        this.remove();
+      }
+      lightBox.append(lightImg);
+    }
+  })
 </script>
   </div>
 </body>
@@ -2748,6 +3402,5 @@ kubectl apply -f cluster.yaml&lt;br&gt;
 
 
 <script src=" /media/js/cool.js"></script>
-
 
 </html>
