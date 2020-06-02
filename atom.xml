@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-02T04:05:39.166Z</updated>
+    <updated>2020-06-02T06:07:04.434Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -16,7 +16,7 @@
         <link href="http://lvelvis.github.io/post/golang-bi-ji-beego-huo-qu-url-qing-qiu-de-can-shu/">
         </link>
         <updated>2020-06-02T04:00:50.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="1获取参数">1.获取参数</h1>
+        <content type="html"><![CDATA[<h1 id="获取参数">获取参数</h1>
 <p>我们经常需要获取用户传递的数据，包括Get、POST等方式的请求，beego里面会自动解析这些数据，你可以通过如下方式获取数据：</p>
 <p>GetString(key string) string<br>
 GetStrings(key string) []string<br>
@@ -41,7 +41,7 @@ intid, err := <strong>strconv.Atoi</strong>(id)<br>
 }```<br>
 更多其他的request的信息，用户可以通过this.Ctx.Request获取信息。</p>
 <p>关于该对象的属性和方法可参考request官方手册https://gowalker.org/net/http#Request</p>
-<h1 id="2直接解析到struct">2.直接解析到struct</h1>
+<h1 id="直接解析到struct">直接解析到struct</h1>
 <p>如果要把表单里的内容赋值到一个struct里，除了用上面的方法一个一个获取再赋值之外，</p>
 <p>beego提供了通过另外一个更便捷的方式，就是通过struct的字段名或tag与表单字段对应直接解析到struct。</p>
 <p>示例3：</p>
@@ -77,7 +77,7 @@ func (this *MainController) Post() {
 <p>例如上面的例子中，会把表单中的username和age分别赋值给user里的Name和Age字段，而Email里的内容则会赋值给Email这个字段。</p>
 <p>（3）调用Controller PraseForm这个方法的时候，传入的参数必须为一个struct的指针，否则对struct的赋值不会成功并返回xx must be a struct pointer的错误。</p>
 <p>（4）如果要忽略一个字段，有两种方法，一是：字段名小写开头，二是：form标签设置为_</p>
-<h1 id="3获取request-body里的内容">3.获取Request Body里的内容</h1>
+<h1 id="获取request-body里的内容">获取Request Body里的内容</h1>
 <p>在API的开发中，我们经常会用到JSON或XML来作为数据交互的格式，如何在beego中获取Request Body里的JSON或XML的数据呢？</p>
 <p>首先，在配置文件里设置copyrequestbody = true</p>
 <p>其次，在Controller中：</p>
@@ -95,7 +95,7 @@ func (this *MainController) Post() {
 }
 </code></pre>
 <p></p>
-<h1 id="4文件上传">4.文件上传</h1>
+<h1 id="文件上传">文件上传</h1>
 <p>在beego中你可以很容易的处理文件上传，就是别忘记在你的form表单中增加“enctype=&quot;multipart/form-data”，否则你的浏览器不会传输你的上传文件。</p>
 <p>文件上传之后一般是放在系统的内存里面，如果文件的size大于设置的缓存大小，那么就放在临时文件中，</p>
 <p>默认的缓存内存是64M，你可以通过如下方式来调整这个缓存内存的大小。</p>
@@ -125,7 +125,7 @@ Beego提供了两个很方便的方法来处理文件上传：</p>
      
 }
 </code></pre>
-<h1 id="5数据绑定">5.数据绑定</h1>
+<h1 id="数据绑定">数据绑定</h1>
 <p>支持从用户请求中直接数据bind到指定的对象。</p>
 <p>示例6：</p>
 <pre><code>var id int
