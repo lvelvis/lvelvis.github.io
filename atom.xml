@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-02T06:07:04.434Z</updated>
+    <updated>2020-06-03T05:57:56.213Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -51,26 +51,25 @@ intid, err := <strong>strconv.Atoi</strong>(id)<br>
     Name  interface{} `form:&quot;&lt;strong&gt;username&lt;/strong&gt;&quot;`
     Age   int         `form:&quot;&lt;strong&gt;age&lt;/strong&gt;&quot;`
     Email string
-}```
-表单
+}
 </code></pre>
-<form id="<strong>user</strong>">
-    名字：<input name="<strong>username</strong>" type="text" />
-    年龄：<input name="<strong>age</strong>" type="text" />
-    邮箱：<input name="Email" type="text" />
-    <input type="submit" value="提交" />
-</form>
-```
-controller里解析
-```
-func (this *MainController) Post() {
-    u := <strong>user{}</strong>
-    if err := this.ParseForm(<strong>&u</strong>); err != nil {
+<p>表单</p>
+<pre><code>&lt;form id=&quot;&lt;strong&gt;user&lt;/strong&gt;&quot;&gt;
+    名字：&lt;input name=&quot;&lt;strong&gt;username&lt;/strong&gt;&quot; type=&quot;text&quot; /&gt;
+    年龄：&lt;input name=&quot;&lt;strong&gt;age&lt;/strong&gt;&quot; type=&quot;text&quot; /&gt;
+    邮箱：&lt;input name=&quot;Email&quot; type=&quot;text&quot; /&gt;
+    &lt;input type=&quot;submit&quot; value=&quot;提交&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+<p>controller里解析</p>
+<pre><code>func (this *MainController) Post() {
+    u := &lt;strong&gt;user{}&lt;/strong&gt;
+    if err := this.ParseForm(&lt;strong&gt;&amp;u&lt;/strong&gt;); err != nil {
         //handle error
     }
 }　　
-```
-需要说明的是：
+</code></pre>
+<p>需要说明的是：</p>
 <p>（1）structTag form的定义和renderform方法共用一个标签。</p>
 <p>（2）定义struct时，字段名后如果有form这个tag，则会把form表单里的name和tag的名字一样的字段赋值给这个字段，</p>
 <p>否则就会把form表单里与字段名一样的表单内容赋值给这个字段。</p>
