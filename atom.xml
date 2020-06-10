@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-03T06:22:41.552Z</updated>
+    <updated>2020-06-10T08:42:53.043Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,49 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[golang笔记-go mod与go vendor]]></title>
+        <id>http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">
+        </link>
+        <updated>2020-06-10T08:40:20.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="go-mod-使用">go mod 使用</h1>
+<p>解决的问题是golang不再依赖gopath的设置，下载下来的包可以直接使用。<br>
+go mod init ./<br>
+go build main.go 或 go build -mod=vendor main.go<br>
+go mod vendor #将包打到vendor文件夹下</p>
+<h1 id="go-vendor">go vendor</h1>
+<p>管理Golang项目依赖，应该是一个第三方的，但是比较好用。</p>
+<p>安装<br>
+go get -u github.com/kardianos/govendor</p>
+<p>使用一套连招：</p>
+<pre><code>govendor init # 创建vendor目录，创建vendor.json文件  
+govendor add +external #生成依赖包  
+govendor update +vendor # 更新vendor的包命令  
+状态	缩写状态	含义
++local	l	本地包，即项目自身的包组织
++external	e	外部包，即被 $GOPATH 管理，但不在 vendor 目录下
++vendor	v	已被 govendor 管理，即在 vendor 目录下
++std	s	标准库中的包
++unused	u	未使用的包，即包在 vendor 目录下，但项目并没有用到
++missing	m	代码引用了依赖包，但该包并没有找到
++program	p	主程序包，意味着可以编译为执行文件
++outside	 	外部包和缺失的包
++all	 	所有的包
+命令	功能
+init	初始化 vendor 目录
+list	列出所有的依赖包
+add	添加包到 vendor 目录，如 govendor add +external 添加所有外部包
+add PKG_PATH	添加指定的依赖包到 vendor 目录
+update	从 $GOPATH 更新依赖包到 vendor 目录
+remove	从 vendor 管理中删除依赖
+status	列出所有缺失、过期和修改过的包
+fetch	添加或更新包到本地 vendor 目录
+sync	本地存在 vendor.json 时候拉去依赖包，匹配所记录的版本
+get	类似 go get 目录，拉取依赖包到 vendor 目录
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[golang笔记-zip日志使用]]></title>
         <id>http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/</id>
@@ -1095,95 +1138,6 @@ istio版本：1.5</p>
 <img src="http://lvelvis.github.io/post-images/1588232244321.png" alt="" loading="lazy"></p>
 <h3 id="其他测试">其他测试</h3>
 <p>istio-1.5版本回归单体，各个组件优化了很多，后期测试http链接与tcp链接应用</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[K8S通过helm 部署 ELK 7.3]]></title>
-        <id>http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/</id>
-        <link href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">
-        </link>
-        <updated>2020-04-30T07:12:33.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="前提">前提：</h1>
-<p>在kubernetes集群中部署elk组件，es集群部署3个节点，kibana部署一个，容器数据持久化需要storageclass</p>
-<p>依赖：<br>
-Helm<br>
-Persistent Volumes</p>
-<h1 id="准备配置">准备配置</h1>
-<p>由于repo在线安装太慢，建议下载char本地修改参数后安装</p>
-<pre><code>git clone https://github.com/elastic/helm-charts.git
-</code></pre>
-<h1 id="部署-elk">部署 ELK</h1>
-<h2 id="创建elk命名空间">创建elk命名空间</h2>
-<pre><code>#cat elk-ns.yml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: elk
-</code></pre>
-<h2 id="部署elasticsearch">部署elasticsearch</h2>
-<p>cd helm-charts/elasticsearch</p>
-<p>helm install --namespace=elk  --name=elasticsearch .</p>
-<h2 id="部署-kibana">部署 Kibana</h2>
-<p>cd helm-charts/kibana</p>
-<p>helm install --namespace=elk --name=kibana .<br>
-通过 kubectl get deploy 和 pod 了解部署状态；</p>
-<h1 id="小知识">小知识</h1>
-<p>Kibana 直接通过 K8S 内部 DNS 域名 访问 ES。</p>
-<p>查看容器内的配置</p>
-<pre><code>kubectl  exec kibana-kibana-7cbc5db55c-6qct7 -c kibana -- cat /usr/share/kibana/config/kibana.yml
-
-# Default Kibana configuration for docker target
-server.name: kibana
-server.host: &quot;0&quot;
-elasticsearch.hosts: [ &quot;http://elasticsearch:9200&quot; ]
-xpack.monitoring.ui.container.elasticsearch.enabled: true
-</code></pre>
-<h1 id="kibana-添加-ingress">Kibana 添加 Ingress</h1>
-<p>通过 Ingress 添加访问入口</p>
-<pre><code>apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: kibana
-  namespace: default
-spec:
-  rules:
-  - host: &lt;YourDomain&gt;  ## 访问 Kibana 的域名 
-    http:
-      paths:
-      - backend:
-          serviceName: kibana-kibana
-          servicePort: 5601
-        path: /
- status:
-  loadBalancer:
-    ingress:
-    - ip: &lt;YourLoadBalancerIP&gt;  ## LB 的 IP
-</code></pre>
-<h1 id="访问测试">访问测试</h1>
-<p>访问域名，即可打开 Kibana 7.3 版本；</p>
-<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
-<p>查看集群的运行状态</p>
-<figure data-type="image" tabindex="2"><img src="http://lvelvis.github.io/post-images/1588231313286.jpg" alt="" loading="lazy"></figure>
-<p>也可以通过命令行查看</p>
-<pre><code>~$ curl  -s &lt;YourESHost&gt;/_cluster/health | jq .
-{
-  &quot;cluster_name&quot;: &quot;elasticsearch&quot;,
-  &quot;status&quot;: &quot;yellow&quot;,
-  &quot;timed_out&quot;: false,
-  &quot;number_of_nodes&quot;: 3,
-  &quot;number_of_data_nodes&quot;: 3,
-  &quot;active_primary_shards&quot;: 19,
-  &quot;active_shards&quot;: 35,
-  &quot;relocating_shards&quot;: 0,
-  &quot;initializing_shards&quot;: 0,
-  &quot;unassigned_shards&quot;: 3,
-  &quot;delayed_unassigned_shards&quot;: 0,
-  &quot;number_of_pending_tasks&quot;: 0,
-  &quot;number_of_in_flight_fetch&quot;: 0,
-  &quot;task_max_waiting_in_queue_millis&quot;: 0,
-  &quot;active_shards_percent_as_number&quot;: 92.10526315789474
-}
-</code></pre>
 ]]></content>
     </entry>
 </feed>
