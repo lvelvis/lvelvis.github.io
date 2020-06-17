@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>K8S通过helm 部署 ELK 7.3 | lvelvis</title>
+<title>docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1592365940567">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,8 +29,8 @@
 
 
 
-  <meta name="description" content="K8S通过helm 部署 ELK 7.3" />
-  <meta name="keywords" content="elk,k8s" />
+  <meta name="description" content="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" />
+  <meta name="keywords" content="docker,memory,kubernetes,cgroups cadvisor" />
 </head>
 
 <body>
@@ -178,8 +178,7 @@
       <div class="sidebar-body mist" id="sidebar_body">
         
           
-            <div class="post-side-meta" id="post_side_meta">
-              
+            
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -242,202 +241,6 @@
 
 
 </div>
-            </div>
-            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
-              <div class="toc-box right-motion">
-  <div class="toc-wrapper auto-number auto"
-    id="toc_wrapper">
-    <ul class="markdownIt-TOC">
-<li><a href="#%E5%89%8D%E6%8F%90">前提：</a></li>
-<li><a href="#%E5%87%86%E5%A4%87%E9%85%8D%E7%BD%AE">准备配置</a></li>
-<li><a href="#%E9%83%A8%E7%BD%B2-elk">部署 ELK</a>
-<ul>
-<li><a href="#%E5%88%9B%E5%BB%BAelk%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4">创建elk命名空间</a></li>
-<li><a href="#%E9%83%A8%E7%BD%B2elasticsearch">部署elasticsearch</a></li>
-<li><a href="#%E9%83%A8%E7%BD%B2-kibana">部署 Kibana</a></li>
-</ul>
-</li>
-<li><a href="#%E5%B0%8F%E7%9F%A5%E8%AF%86">小知识</a></li>
-<li><a href="#kibana-%E6%B7%BB%E5%8A%A0-ingress">Kibana 添加 Ingress</a></li>
-<li><a href="#%E8%AE%BF%E9%97%AE%E6%B5%8B%E8%AF%95">访问测试</a></li>
-</ul>
-
-  </div>
-</div>
-
-<script>
-
-  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
-  let active = 'active-show', activeClass = 'active-current';
-  let tocWrapper = document.querySelector('#toc_wrapper');
-  let tocContent = tocWrapper.children[0];
-  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
-
-  function addTocNumber(elem, deep) {
-    if (!elem) {
-      return;
-    }
-    let prop = elem.__proto__;
-
-    if (prop === HTMLUListElement.prototype) {
-      for (let i = 0; i < elem.children.length; i++) {
-        addTocNumber(elem.children[i], deep + (i + 1) + '.');
-      }
-    } else if (prop === HTMLLIElement.prototype) {
-      // 保存li元素
-      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
-        lList.push(elem);
-      }
-      for (let i = 0; i < elem.children.length; i++) {
-        let cur = elem.children[i];
-        if (cur.__proto__ === HTMLAnchorElement.prototype) {
-          if (autoNumber) {
-            cur.text = deep + ' ' + cur.text;
-          }
-        } else if (cur.__proto__ === HTMLUListElement.prototype) {
-          addTocNumber(cur, deep);
-        }
-      }
-    }
-  }
-
-  function removeParentActiveClass() {
-    let parents = tocContent.querySelectorAll('.' + active)
-    parents.forEach(function (elem) {
-      elem.classList.remove(active);
-    });
-  }
-
-  function addActiveClass(index) {
-    if (index >= 0 && index < hList.length) {
-      lList[index].classList.add(activeClass);
-    }
-  }
-
-  function removeActiveClass(index) {
-    if (index >= 0 && index < hList.length) {
-      lList[index].classList.remove(activeClass);
-    }
-  }
-
-  function addActiveLiElemment(elem, parent) {
-    if (!elem || elem === parent) {
-      return;
-    } else {
-      if (elem.__proto__ === HTMLLIElement.prototype) {
-        elem.classList.add(active);
-      }
-      addActiveLiElemment(elem.parentElement, parent);
-    }
-  }
-
-  function showToc() {
-    if (tocWrapper) {
-      postBody = document.querySelector('#post_body');
-      for (let i = 0; i < postBody.children.length; i++) {
-        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
-          hList.push(postBody.children[i]);
-        }
-      }
-      if (tocWrapper.classList.contains('compress')) {
-        tocContent.classList.add('closed');
-      } else if (tocWrapper.classList.contains('no_compress')) {
-        tocContent.classList.add('expanded');
-      } else {
-        if (hList.length > 10) {
-          active = 'active-hidden'
-          tocContent.classList.add('closed');
-        } else {
-          tocContent.classList.add('expanded');
-        }
-      }
-    }
-  }
-
-  (function () {
-    // 处理不是从#一级标题开始目录
-    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
-      let con = tocContent.children[0].children[0];
-      tocContent.innerHTML = con.innerHTML;
-    }
-    let markdownItTOC = document.querySelector('.markdownIt-TOC');
-    let innerHeight = window.innerHeight;
-    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
-    addTocNumber(tocContent, '');
-  })();
-
-  document.addEventListener('scroll', function (e) {
-    if (lList.length <= 0) {
-      return;
-    }
-    let scrollTop = document.scrollingElement.scrollTop + 10;
-    let dir;
-
-    if (lastTop - scrollTop > 0) {
-      dir = 'up';
-    } else {
-      dir = 'down';
-    }
-
-    lastTop = scrollTop;
-    if (scrollTop <= 0) {
-      if (lastIndex >= 0 && lastIndex < hList.length) {
-        lList[lastIndex].classList.remove(activeClass);
-      }
-      return;
-    }
-
-    let current = 0, hasFind = false;
-    for (let i = 0; i < hList.length; i++) {
-      if (hList[i].offsetTop > scrollTop) {
-        current = i;
-        hasFind = true;
-        break;
-      }
-    }
-    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
-      current = hList.length - 1;
-    } else {
-      current--;
-    }
-    if (dir === 'down') {
-      if (current > lastIndex) {
-        addActiveClass(current);
-        removeActiveClass(lastIndex)
-        lastIndex = current;
-        removeParentActiveClass();
-        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
-      }
-    } else {
-      if (current < lastIndex) {
-        addActiveClass(current);
-        removeActiveClass(lastIndex);
-        lastIndex = current;
-        removeParentActiveClass();
-        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
-      }
-    }
-  });
-
-
-  window.addEventListener('load', function () {
-    showToc();
-    document.querySelector('#sidebar').style = 'display: block;';
-    tocWrapper.classList.add('toc-active');
-    setTimeout(function () {
-      if ("createEvent" in document) {
-        let evt = document.createEvent("HTMLEvents");
-        evt.initEvent("scroll", false, true);
-        document.dispatchEvent(evt);
-      }
-      else {
-        document.fireEvent("scroll");
-      }
-    }, 500)
-  })
-
-</script>
-            </div>
           
         
       </div>
@@ -525,8 +328,8 @@
           <div class="section bg-color post post-page">
             <header class="post-header">
   <h1 class="post-title">
-    <a class="post-title-link" href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/">
-      K8S通过helm 部署 ELK 7.3
+    <a class="post-title-link" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">
+      docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS
     </a>
   </h1>
   <div class="post-meta">
@@ -534,7 +337,7 @@
     <span class="meta-item pc-show">
       <i class="fa fa-calendar-o"></i>
       <span>发布于</span>
-      <span>2020-04-30</span>
+      <span>2020-06-17</span>
       <span class="post-meta-divider pc-show">|</span>
     </span>
     
@@ -543,14 +346,26 @@
       <span class="pc-show">分类于</span>
       
       
-      <a href="http://lvelvis.github.io/tag/Diytd8lD3/">
-        <span>elk</span>
+      <a href="http://lvelvis.github.io/tag/h7T6l7ql6/">
+        <span>docker</span>
       </a>、
       
       
       
-      <a href="http://lvelvis.github.io/tag/Q617Y3Kh2/">
-        <span>k8s</span>
+      <a href="http://lvelvis.github.io/tag/svMa3rpx6/">
+        <span>memory</span>
+      </a>、
+      
+      
+      
+      <a href="http://lvelvis.github.io/tag/KWlALzyzR/">
+        <span>kubernetes</span>
+      </a>、
+      
+      
+      
+      <a href="http://lvelvis.github.io/tag/0C44DhwtVY/">
+        <span>cgroups cadvisor</span>
       </a>
       
       
@@ -559,17 +374,17 @@
     
     <span class="meta-item">
       <i class="fa fa-clock-o"></i>
-      <span>2分钟</span>
+      <span>7分钟</span>
     </span>
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>366<span class="pc-show">字数</span></span>
+      <span>1365<span class="pc-show">字数</span></span>
     </span>
     
     
     
-    <span id="/post/k8s-tong-guo-helm-bu-shu-elk-73/" data-flag-title="K8S通过helm 部署 ELK 7.3" class="meta-item pc-show leancloud_visitors">
+    <span id="/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/" data-flag-title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" class="meta-item pc-show leancloud_visitors">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-eye"></i>
       <span>浏览量：<span class="leancloud-visitors-count"></span></span>
@@ -578,86 +393,156 @@
   </div>
 </header>
             <div class="post-body next-md-body" id="post_body">
-              <h1 id="前提">前提：</h1>
-<p>在kubernetes集群中部署elk组件，es集群部署3个节点，kibana部署一个，容器数据持久化需要storageclass</p>
-<p>依赖：<br>
-Helm<br>
-Persistent Volumes</p>
-<h1 id="准备配置">准备配置</h1>
-<p>由于repo在线安装太慢，建议下载char本地修改参数后安装</p>
-<pre><code>git clone https://github.com/elastic/helm-charts.git
+              <p>&quot;kubernetes&quot;（v1.10.2）表示我的pod（包含一个容器）使用了大约5GB的内存。在容器内部，RSS说的更像681Mib。任何人都能用以下数据解释如何从681Mib到5GB吗（或者用我省略的另一个命令来描述如何弥补差异，无论是从容器还是从在Kubernetes中运行此容器的Docker主机）？<br>
+Kubectl Top Pods表示5GB：</p>
+<pre><code>% kubectl top pods -l app=myapp
+NAME                             CPU(cores)   MEMORY(bytes)
+myapp-56b947bf6d-2lcr7           39m          5039Mi
 </code></pre>
-<h1 id="部署-elk">部署 ELK</h1>
-<h2 id="创建elk命名空间">创建elk命名空间</h2>
-<pre><code>#cat elk-ns.yml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: elk
-</code></pre>
-<h2 id="部署elasticsearch">部署elasticsearch</h2>
-<p>cd helm-charts/elasticsearch</p>
-<p>helm install --namespace=elk  --name=elasticsearch .</p>
-<h2 id="部署-kibana">部署 Kibana</h2>
-<p>cd helm-charts/kibana</p>
-<p>helm install --namespace=elk --name=kibana .<br>
-通过 kubectl get deploy 和 pod 了解部署状态；</p>
-<h1 id="小知识">小知识</h1>
-<p>Kibana 直接通过 K8S 内部 DNS 域名 访问 ES。</p>
-<p>查看容器内的配置</p>
-<pre><code>kubectl  exec kibana-kibana-7cbc5db55c-6qct7 -c kibana -- cat /usr/share/kibana/config/kibana.yml
+<p>Cadvisor报告了类似的数字（可能来自稍有不同的时间，因此请忽略细微的差异）：</p>
+<pre><code>container_memory_usage_bytes{pod_name=~&quot;.*myapp.*&quot;}      5309456384
 
-# Default Kibana configuration for docker target
-server.name: kibana
-server.host: &quot;0&quot;
-elasticsearch.hosts: [ &quot;http://elasticsearch:9200&quot; ]
-xpack.monitoring.ui.container.elasticsearch.enabled: true
+5309456384 / 1024.0 / 1024 ~= 5063 ~= 5039
 </code></pre>
-<h1 id="kibana-添加-ingress">Kibana 添加 Ingress</h1>
-<p>通过 Ingress 添加访问入口</p>
-<pre><code>apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: kibana
-  namespace: default
-spec:
-  rules:
-  - host: &lt;YourDomain&gt;  ## 访问 Kibana 的域名 
-    http:
-      paths:
-      - backend:
-          serviceName: kibana-kibana
-          servicePort: 5601
-        path: /
- status:
-  loadBalancer:
-    ingress:
-    - ip: &lt;YourLoadBalancerIP&gt;  ## LB 的 IP
+<p>在容器中，此文件似乎是cadvisor获取其数据的位置：</p>
+<pre><code>% kubectl exec -it myapp-56b947bf6d-2lcr7 bash
+meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.usage_in_bytes
+5309456384
+``
+容器中的常驻集大小（RSS）不匹配（小于1GB）：
 </code></pre>
-<h1 id="访问测试">访问测试</h1>
-<p>访问域名，即可打开 Kibana 7.3 版本；</p>
-<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1588231324831.jpg" alt="" loading="lazy"></figure>
-<p>查看集群的运行状态</p>
-<figure data-type="image" tabindex="2"><img src="http://lvelvis.github.io/post-images/1588231313286.jpg" alt="" loading="lazy"></figure>
-<p>也可以通过命令行查看</p>
-<pre><code>~$ curl  -s &lt;YourESHost&gt;/_cluster/health | jq .
-{
-  &quot;cluster_name&quot;: &quot;elasticsearch&quot;,
-  &quot;status&quot;: &quot;yellow&quot;,
-  &quot;timed_out&quot;: false,
-  &quot;number_of_nodes&quot;: 3,
-  &quot;number_of_data_nodes&quot;: 3,
-  &quot;active_primary_shards&quot;: 19,
-  &quot;active_shards&quot;: 35,
-  &quot;relocating_shards&quot;: 0,
-  &quot;initializing_shards&quot;: 0,
-  &quot;unassigned_shards&quot;: 3,
-  &quot;delayed_unassigned_shards&quot;: 0,
-  &quot;number_of_pending_tasks&quot;: 0,
-  &quot;number_of_in_flight_fetch&quot;: 0,
-  &quot;task_max_waiting_in_queue_millis&quot;: 0,
-  &quot;active_shards_percent_as_number&quot;: 92.10526315789474
-}
+<p>meme@myapp-56b947bf6d-2lcr7:/app# kb=$(ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk | grep -v RSS | awk '{print $6}' | awk '{s+=<span class='katex-error' title='ParseError: KaTeX parse error: Expected &#039;EOF&#039;, got &#039;}&#039; at position 2: 1}̲ END {printf &quot;%…'>1} END {printf &quot;%.0f&quot;, s}&#039;); mb=</span>(expr $kb / 1024); printf &quot;Kb: $kb\nMb: $mb\n&quot;<br>
+Kb: 698076<br>
+Mb: 681</p>
+<pre><code>完整的PS AUX，以防有帮助：
+</code></pre>
+<p>meme@myapp-56b947bf6d-2lcr7:/app# ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk<br>
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND<br>
+meme         1  0.0  0.0 151840 10984 ?        Ss   Jun04   0:29 /usr/sbin/apache2 -D FOREGROUND<br>
+www-data    10  0.0  0.0 147340  4652 ?        S    Jun04   0:00 /usr/sbin/apache2 -D FOREGROUND<br>
+www-data    11  0.0  0.0 148556  4392 ?        S    Jun04   0:16 /usr/sbin/apache2 -D FOREGROUND<br>
+www-data    12  0.2  0.0 2080632 11348 ?       Sl   Jun04  31:58 /usr/sbin/apache2 -D FOREGROUND<br>
+www-data    13  0.1  0.0 2080384 10980 ?       Sl   Jun04  18:12 /usr/sbin/apache2 -D FOREGROUND<br>
+www-data    68  0.3  0.0 349048 94272 ?        Sl   Jun04  47:09 hotapp<br>
+www-data   176  0.2  0.0 349624 92888 ?        Sl   Jun04  43:11 hotapp<br>
+www-data   179  0.2  0.0 349196 94456 ?        Sl   Jun04  42:20 hotapp<br>
+www-data   180  0.3  0.0 349828 95112 ?        Sl   Jun04  44:14 hotapp<br>
+www-data   185  0.3  0.0 346644 91948 ?        Sl   Jun04  43:49 hotapp<br>
+www-data   186  0.3  0.0 346208 91568 ?        Sl   Jun04  44:27 hotapp<br>
+www-data   189  0.2  0.0 350208 95476 ?        Sl   Jun04  41:47 hotapp</p>
+<pre><code>Docker容器统计API中的内存部分：
+</code></pre>
+<p>curl --unix-socket /var/run/docker.sock 'http:/v1.24/containers/a45fc651e7b12f527b677e6a46e2902786bee6620484922016a135e317a42b4e/stats?stream=false' | jq . # yields:</p>
+<p>&quot;memory_stats&quot;: {<br>
+&quot;usage&quot;: 5327712256,<br>
+&quot;max_usage&quot;: 5368344576,<br>
+&quot;stats&quot;: {<br>
+&quot;active_anon&quot;: 609095680,<br>
+&quot;active_file&quot;: 74457088,<br>
+&quot;cache&quot;: 109944832,<br>
+&quot;dirty&quot;: 28672,<br>
+&quot;hierarchical_memory_limit&quot;: 5368709120,<br>
+&quot;inactive_anon&quot;: 1687552,<br>
+&quot;inactive_file&quot;: 29974528,<br>
+&quot;mapped_file&quot;: 1675264,<br>
+&quot;pgfault&quot;: 295316278,<br>
+&quot;pgmajfault&quot;: 77,<br>
+&quot;pgpgin&quot;: 85138921,<br>
+&quot;pgpgout&quot;: 84964308,<br>
+&quot;rss&quot;: 605270016,<br>
+&quot;rss_huge&quot;: 0,<br>
+&quot;shmem&quot;: 5513216,<br>
+&quot;total_active_anon&quot;: 609095680,<br>
+&quot;total_active_file&quot;: 74457088,<br>
+&quot;total_cache&quot;: 109944832,<br>
+&quot;total_dirty&quot;: 28672,<br>
+&quot;total_inactive_anon&quot;: 1687552,<br>
+&quot;total_inactive_file&quot;: 29974528,<br>
+&quot;total_mapped_file&quot;: 1675264,<br>
+&quot;total_pgfault&quot;: 295316278,<br>
+&quot;total_pgmajfault&quot;: 77,<br>
+&quot;total_pgpgin&quot;: 85138921,<br>
+&quot;total_pgpgout&quot;: 84964308,<br>
+&quot;total_rss&quot;: 605270016,<br>
+&quot;total_rss_huge&quot;: 0,<br>
+&quot;total_shmem&quot;: 5513216,<br>
+&quot;total_unevictable&quot;: 0,<br>
+&quot;total_writeback&quot;: 0,<br>
+&quot;unevictable&quot;: 0,<br>
+&quot;writeback&quot;: 0<br>
+},<br>
+&quot;limit&quot;: 5368709120<br>
+},</p>
+<pre><code>对断言的注释：
+总计（memory.usage_in_bytes）=rss+缓存
+说：
+用法\u字节：为了提高效率，与其他内核组件一样，内存组使用一些优化
+避免不必要的缓存线错误共享。使用率受
+方法，不显示内存（和交换）使用的“精确”值，这是一个模糊的
+有效访问的值。（当然，必要时，它是同步的。）
+如果您想知道更精确的内存使用情况，应该使用rss+cache（+swap）
+内存中的值。stat（见5.2）。
+说：
+注意：在Linux上，Docker CLI通过从总内存使用量中减去页面缓存使用量来报告内存使用情况。API不执行这样的计算，而是提供总内存使用量和页面缓存的数量，以便客户机可以根据需要使用数据。
+实际上，容器中/sys/fs/cgroup/memory/memory.stat中的大多数内容都出现在上面的docker stats api响应中（与在不同时间采集样本略有不同，抱歉）：
+</code></pre>
+<pre><code>meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.stat
+cache 119492608
+rss 607436800
+rss_huge 0
+shmem 5525504
+mapped_file 1675264
+dirty 69632
+writeback 0
+pgpgin 85573974
+pgpgout 85396501
+pgfault 296366011
+pgmajfault 80
+inactive_anon 1687552
+active_anon 611213312
+inactive_file 32800768
+active_file 81166336
+unevictable 0
+hierarchical_memory_limit 5368709120
+total_cache 119492608
+total_rss 607436800
+total_rss_huge 0
+total_shmem 5525504
+total_mapped_file 1675264
+total_dirty 69632
+total_writeback 0
+total_pgpgin 85573974
+total_pgpgout 85396501
+total_pgfault 296366011
+total_pgmajfault 80
+total_inactive_anon 1687552
+total_active_anon 611213312
+total_inactive_file 32800768
+total_active_file 81166336
+total_unevictable 0
+</code></pre>
+<p>内存信息来自：<br>
+Limits:<br>
+memory:  5Gi<br>
+Requests:<br>
+memory:   4Gi</p>
+<p>下面是容器内的提示。在这一行程序中，我获取所有进程ID，在它们上运行pmap-x，并从pmap结果中提取kbytes列。总的结果是256兆字节（远小于PS的RSS，我认为部分原因是许多进程没有从PMAP-X返回输出）：</p>
+<pre><code>ps aux | awk '{print $2}' | grep -v PID | xargs sudo pmap -x | grep total | grep -v grep | awk '{print $3}' | awk '{s+=$1} END {printf &quot;%.0f&quot;, s}'; echo
+256820
+</code></pre>
+<p>https://github.com/google/cadvisor/issues/638中提到了。它检查kubectl describe pod <pod>和pmap。这里没有照明（同样，它似乎忽略了一些过程）：</p>
+<pre><code># python ps_mem.py
+Private  +   Shared  =  RAM used    Program
+
+  1.7 MiB +   1.0 MiB =   2.7 MiB   apache2
+  2.0 MiB +   1.0 MiB =   3.0 MiB   bash (3)
+---------------------------------
+                          5.7 MiB
+=================================
+</code></pre>
+<p>最佳答案</p>
+<pre><code>有一件事我没看到您检查这里是内核内存。这在memory.usage_in_bytes图中也有说明，但在memory.stat中没有出现。您可以通过查看/sys/fs/cgroup/memory/memory.kmem.usage_in_bytes找到它。
+有一次，我看到我们的一个.NET核心应用程序也发生了类似的事情，但我不知道到底发生了什么（可能是.NET核心内存泄漏，因为它是我们的应用程序无法控制的非托管内存）。这将取决于您的应用程序使用是否正常，但就cgroups而言，我相信内核内存使用在默认情况下是不受约束的。
 </code></pre>
 
             </div>
@@ -669,7 +554,7 @@ spec:
     </li>
     <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/" title="K8S通过helm 部署 ELK 7.3">http://lvelvis.github.io/post/k8s-tong-guo-helm-bu-shu-elk-73/</a>
+      <a href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS">http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/</a>
     </li>
     <li class="post-copyright-license">
       <strong>版权声明： </strong>
@@ -678,23 +563,23 @@ spec:
   </ul>
   <div class="tags">
     
-      <a href="http://lvelvis.github.io/tag/Diytd8lD3/"># elk</a>
+      <a href="http://lvelvis.github.io/tag/h7T6l7ql6/"># docker</a>
     
-      <a href="http://lvelvis.github.io/tag/Q617Y3Kh2/"># k8s</a>
+      <a href="http://lvelvis.github.io/tag/svMa3rpx6/"># memory</a>
+    
+      <a href="http://lvelvis.github.io/tag/KWlALzyzR/"># kubernetes</a>
+    
+      <a href="http://lvelvis.github.io/tag/0C44DhwtVY/"># cgroups cadvisor</a>
     
   </div>
   <div class="nav">
     <div class="nav-prev">
       
-        <i class="fa fa-chevron-left"></i>
-        <a class="nav-pc-next" title="istio-客户端源地址如何显示" href="http://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/">istio-客户端源地址如何显示</a class="nav-pc-next">
-        <a class="nav-mobile-prev" title="istio-客户端源地址如何显示" href="http://lvelvis.github.io/post/istio-ke-hu-duan-yuan-di-zhi-ru-he-xian-shi/">上一篇</a>
-      
     </div>
     <div class="nav-next">
       
-        <a class="nav-pc-next" title="kubesphere安装使用体验" href="http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/">kubesphere安装使用体验</a>
-        <a class="nav-mobile-next" title="kubesphere安装使用体验" href="http://lvelvis.github.io/post/kubesphere-an-zhuang-shi-yong-ti-yan/">下一篇</a>
+        <a class="nav-pc-next" title="golang笔记-go mod与go vendor" href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">golang笔记-go mod与go vendor</a>
+        <a class="nav-mobile-next" title="golang笔记-go mod与go vendor" href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">下一篇</a>
         <i class="fa fa-chevron-right"></i>
       
     </div>
