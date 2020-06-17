@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-17T03:52:30.241Z</updated>
+    <updated>2020-06-17T03:57:48.341Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -28,87 +28,86 @@ myapp-56b947bf6d-2lcr7           39m          5039Mi
 5309456384 / 1024.0 / 1024 ~= 5063 ~= 5039
 </code></pre>
 <p>在容器中，此文件似乎是cadvisor获取其数据的位置：</p>
-<pre><code>% kubectl exec -it myapp-56b947bf6d-2lcr7 bash
+<pre><code># kubectl exec -it myapp-56b947bf6d-2lcr7 bash
 meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.usage_in_bytes
 5309456384
-``
 容器中的常驻集大小（RSS）不匹配（小于1GB）：
+meme@myapp-56b947bf6d-2lcr7:/app# kb=$(ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk | grep -v RSS | awk '{print $6}' | awk '{s+=$1} END {printf &quot;%.0f&quot;, s}'); mb=$(expr $kb / 1024); printf &quot;Kb: $kb\nMb: $mb\n&quot;
+Kb: 698076
+Mb: 681
 </code></pre>
-<p>meme@myapp-56b947bf6d-2lcr7:/app# kb=$(ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk | grep -v RSS | awk '{print $6}' | awk '{s+=<span class='katex-error' title='ParseError: KaTeX parse error: Expected &#039;EOF&#039;, got &#039;}&#039; at position 2: 1}̲ END {printf &quot;%…'>1} END {printf &quot;%.0f&quot;, s}&#039;); mb=</span>(expr $kb / 1024); printf &quot;Kb: $kb\nMb: $mb\n&quot;<br>
-Kb: 698076<br>
-Mb: 681</p>
 <pre><code>完整的PS AUX，以防有帮助：
+meme@myapp-56b947bf6d-2lcr7:/app# ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+meme         1  0.0  0.0 151840 10984 ?        Ss   Jun04   0:29 /usr/sbin/apache2 -D FOREGROUND
+www-data    10  0.0  0.0 147340  4652 ?        S    Jun04   0:00 /usr/sbin/apache2 -D FOREGROUND
+www-data    11  0.0  0.0 148556  4392 ?        S    Jun04   0:16 /usr/sbin/apache2 -D FOREGROUND
+www-data    12  0.2  0.0 2080632 11348 ?       Sl   Jun04  31:58 /usr/sbin/apache2 -D FOREGROUND
+www-data    13  0.1  0.0 2080384 10980 ?       Sl   Jun04  18:12 /usr/sbin/apache2 -D FOREGROUND
+www-data    68  0.3  0.0 349048 94272 ?        Sl   Jun04  47:09 hotapp
+www-data   176  0.2  0.0 349624 92888 ?        Sl   Jun04  43:11 hotapp
+www-data   179  0.2  0.0 349196 94456 ?        Sl   Jun04  42:20 hotapp
+www-data   180  0.3  0.0 349828 95112 ?        Sl   Jun04  44:14 hotapp
+www-data   185  0.3  0.0 346644 91948 ?        Sl   Jun04  43:49 hotapp
+www-data   186  0.3  0.0 346208 91568 ?        Sl   Jun04  44:27 hotapp
+www-data   189  0.2  0.0 350208 95476 ?        Sl   Jun04  41:47 hotapp
 </code></pre>
-<p>meme@myapp-56b947bf6d-2lcr7:/app# ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk<br>
-USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND<br>
-meme         1  0.0  0.0 151840 10984 ?        Ss   Jun04   0:29 /usr/sbin/apache2 -D FOREGROUND<br>
-www-data    10  0.0  0.0 147340  4652 ?        S    Jun04   0:00 /usr/sbin/apache2 -D FOREGROUND<br>
-www-data    11  0.0  0.0 148556  4392 ?        S    Jun04   0:16 /usr/sbin/apache2 -D FOREGROUND<br>
-www-data    12  0.2  0.0 2080632 11348 ?       Sl   Jun04  31:58 /usr/sbin/apache2 -D FOREGROUND<br>
-www-data    13  0.1  0.0 2080384 10980 ?       Sl   Jun04  18:12 /usr/sbin/apache2 -D FOREGROUND<br>
-www-data    68  0.3  0.0 349048 94272 ?        Sl   Jun04  47:09 hotapp<br>
-www-data   176  0.2  0.0 349624 92888 ?        Sl   Jun04  43:11 hotapp<br>
-www-data   179  0.2  0.0 349196 94456 ?        Sl   Jun04  42:20 hotapp<br>
-www-data   180  0.3  0.0 349828 95112 ?        Sl   Jun04  44:14 hotapp<br>
-www-data   185  0.3  0.0 346644 91948 ?        Sl   Jun04  43:49 hotapp<br>
-www-data   186  0.3  0.0 346208 91568 ?        Sl   Jun04  44:27 hotapp<br>
-www-data   189  0.2  0.0 350208 95476 ?        Sl   Jun04  41:47 hotapp</p>
-<pre><code>Docker容器统计API中的内存部分：
+<p>Docker容器统计API中的内存部分：</p>
+<pre><code>curl --unix-socket /var/run/docker.sock 'http:/v1.24/containers/a45fc651e7b12f527b677e6a46e2902786bee6620484922016a135e317a42b4e/stats?stream=false' | jq . # yields:
+
+&quot;memory_stats&quot;: {
+  &quot;usage&quot;: 5327712256,
+  &quot;max_usage&quot;: 5368344576,
+  &quot;stats&quot;: {
+    &quot;active_anon&quot;: 609095680,
+    &quot;active_file&quot;: 74457088,
+    &quot;cache&quot;: 109944832,
+    &quot;dirty&quot;: 28672,
+    &quot;hierarchical_memory_limit&quot;: 5368709120,
+    &quot;inactive_anon&quot;: 1687552,
+    &quot;inactive_file&quot;: 29974528,
+    &quot;mapped_file&quot;: 1675264,
+    &quot;pgfault&quot;: 295316278,
+    &quot;pgmajfault&quot;: 77,
+    &quot;pgpgin&quot;: 85138921,
+    &quot;pgpgout&quot;: 84964308,
+    &quot;rss&quot;: 605270016,
+    &quot;rss_huge&quot;: 0,
+    &quot;shmem&quot;: 5513216,
+    &quot;total_active_anon&quot;: 609095680,
+    &quot;total_active_file&quot;: 74457088,
+    &quot;total_cache&quot;: 109944832,
+    &quot;total_dirty&quot;: 28672,
+    &quot;total_inactive_anon&quot;: 1687552,
+    &quot;total_inactive_file&quot;: 29974528,
+    &quot;total_mapped_file&quot;: 1675264,
+    &quot;total_pgfault&quot;: 295316278,
+    &quot;total_pgmajfault&quot;: 77,
+    &quot;total_pgpgin&quot;: 85138921,
+    &quot;total_pgpgout&quot;: 84964308,
+    &quot;total_rss&quot;: 605270016,
+    &quot;total_rss_huge&quot;: 0,
+    &quot;total_shmem&quot;: 5513216,
+    &quot;total_unevictable&quot;: 0,
+    &quot;total_writeback&quot;: 0,
+    &quot;unevictable&quot;: 0,
+    &quot;writeback&quot;: 0
+  },
+  &quot;limit&quot;: 5368709120
+},
 </code></pre>
-<p>curl --unix-socket /var/run/docker.sock 'http:/v1.24/containers/a45fc651e7b12f527b677e6a46e2902786bee6620484922016a135e317a42b4e/stats?stream=false' | jq . # yields:</p>
-<p>&quot;memory_stats&quot;: {<br>
-&quot;usage&quot;: 5327712256,<br>
-&quot;max_usage&quot;: 5368344576,<br>
-&quot;stats&quot;: {<br>
-&quot;active_anon&quot;: 609095680,<br>
-&quot;active_file&quot;: 74457088,<br>
-&quot;cache&quot;: 109944832,<br>
-&quot;dirty&quot;: 28672,<br>
-&quot;hierarchical_memory_limit&quot;: 5368709120,<br>
-&quot;inactive_anon&quot;: 1687552,<br>
-&quot;inactive_file&quot;: 29974528,<br>
-&quot;mapped_file&quot;: 1675264,<br>
-&quot;pgfault&quot;: 295316278,<br>
-&quot;pgmajfault&quot;: 77,<br>
-&quot;pgpgin&quot;: 85138921,<br>
-&quot;pgpgout&quot;: 84964308,<br>
-&quot;rss&quot;: 605270016,<br>
-&quot;rss_huge&quot;: 0,<br>
-&quot;shmem&quot;: 5513216,<br>
-&quot;total_active_anon&quot;: 609095680,<br>
-&quot;total_active_file&quot;: 74457088,<br>
-&quot;total_cache&quot;: 109944832,<br>
-&quot;total_dirty&quot;: 28672,<br>
-&quot;total_inactive_anon&quot;: 1687552,<br>
-&quot;total_inactive_file&quot;: 29974528,<br>
-&quot;total_mapped_file&quot;: 1675264,<br>
-&quot;total_pgfault&quot;: 295316278,<br>
-&quot;total_pgmajfault&quot;: 77,<br>
-&quot;total_pgpgin&quot;: 85138921,<br>
-&quot;total_pgpgout&quot;: 84964308,<br>
-&quot;total_rss&quot;: 605270016,<br>
-&quot;total_rss_huge&quot;: 0,<br>
-&quot;total_shmem&quot;: 5513216,<br>
-&quot;total_unevictable&quot;: 0,<br>
-&quot;total_writeback&quot;: 0,<br>
-&quot;unevictable&quot;: 0,<br>
-&quot;writeback&quot;: 0<br>
-},<br>
-&quot;limit&quot;: 5368709120<br>
-},</p>
-<pre><code>对断言的注释：
-总计（memory.usage_in_bytes）=rss+缓存
-说：
-用法\u字节：为了提高效率，与其他内核组件一样，内存组使用一些优化
-避免不必要的缓存线错误共享。使用率受
-方法，不显示内存（和交换）使用的“精确”值，这是一个模糊的
-有效访问的值。（当然，必要时，它是同步的。）
-如果您想知道更精确的内存使用情况，应该使用rss+cache（+swap）
-内存中的值。stat（见5.2）。
-说：
-注意：在Linux上，Docker CLI通过从总内存使用量中减去页面缓存使用量来报告内存使用情况。API不执行这样的计算，而是提供总内存使用量和页面缓存的数量，以便客户机可以根据需要使用数据。
-实际上，容器中/sys/fs/cgroup/memory/memory.stat中的大多数内容都出现在上面的docker stats api响应中（与在不同时间采集样本略有不同，抱歉）：
-</code></pre>
+<p>对断言的注释：<br>
+总计（memory.usage_in_bytes）=rss+缓存<br>
+说：<br>
+用法\u字节：为了提高效率，与其他内核组件一样，内存组使用一些优化<br>
+避免不必要的缓存线错误共享。使用率受<br>
+方法，不显示内存（和交换）使用的“精确”值，这是一个模糊的<br>
+有效访问的值。（当然，必要时，它是同步的。）<br>
+如果您想知道更精确的内存使用情况，应该使用rss+cache（+swap）<br>
+内存中的值。stat（见5.2）。<br>
+说：<br>
+注意：在Linux上，Docker CLI通过从总内存使用量中减去页面缓存使用量来报告内存使用情况。API不执行这样的计算，而是提供总内存使用量和页面缓存的数量，以便客户机可以根据需要使用数据。<br>
+实际上，容器中/sys/fs/cgroup/memory/memory.stat中的大多数内容都出现在上面的docker stats api响应中（与在不同时间采集样本略有不同，抱歉）：</p>
 <pre><code>meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.stat
 cache 119492608
 rss 607436800
