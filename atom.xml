@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-17T03:57:48.341Z</updated>
+    <updated>2020-06-17T09:45:21.106Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,34 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[consul-删除无效服务与节点]]></title>
+        <id>http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/</id>
+        <link href="http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/">
+        </link>
+        <updated>2020-06-17T09:43:15.000Z</updated>
+        <content type="html"><![CDATA[<p>consul删除无效实例<br>
+http://127.0.0.1:8500/v1/agent/service/deregister/test-9c14fa595ddfb8f4c34c673c65b072bb</p>
+<p>test-9c14fa595ddfb8f4c34c673c65b072bb : 实例id<br>
+method : put</p>
+<p>删除无效节点<br>
+http://127.0.0.1:8500/v1/v1/agent/force-leave/4b36b27317a0</p>
+<p>consul leave #关闭consul并离开集群。也可以使用Ctrl+C或kill -INT来gracefully停止agent，这种体面的离开方式让consule可以有机会通知集群其他成员自己的离开。如果你强制地结束了agent，其他member会检测到这个节点的failed。当成员离开时，它的services和checks都会从catalog中移除。当成员failed时，它的health只是简单的被标记为critical，并不会从catalog中移除。Consul会自动尝试重新连接failed节点，允许它从恶劣的网络环境中恢复，显然离开的nodes不会被重新连接。另外，如果这个节点是server，体面的离开对避免潜在的中断的可能很重要。<br>
+为了防止dead nodes的积累，consul会自动把dead nodes移除出catalog。这个过程被称为reaping（收割）。默认是72小时的间隔（不建议更改）</p>
+<pre><code>#!/bin/bash
+clear 
+echo &quot;node_exporter注销工具&quot;
+read -p &quot;请输入要踢掉的节点IP,如果有多个IP,请使用英文格式 ',' 隔开: &quot; IP_LIST
+
+for IP in `echo &quot;${IP_LIST}&quot;|awk -F, 'BEGIN{OFS=&quot; &quot;}{$1=$1;printf(&quot;%s&quot;,$0);}'`
+do 
+   curl -XPUT http://10.100.x.x:8500/v1/agent/service/deregister/node-${IP}
+   echo &quot;${IP}节点已剔除!&quot;
+done
+echo &quot;${IP_LIST}完成剔除&quot;
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS]]></title>
         <id>http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/</id>
@@ -1186,92 +1214,6 @@ cephx 如何配置请参考 CEPHX 配置参考。<br>
 sudo ceph-fuse -m 192.168.0.1:6789 /home/username/cephfs
 </code></pre>
 <p>详情见 <a href="http://docs.ceph.org.cn/man/8/ceph-fuse/">ceph-fuse</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[linux如何导入自定义证书]]></title>
-        <id>http://lvelvis.github.io/post/linux-ru-he-dao-ru-zi-ding-yi-zheng-shu/</id>
-        <link href="http://lvelvis.github.io/post/linux-ru-he-dao-ru-zi-ding-yi-zheng-shu/">
-        </link>
-        <updated>2020-05-06T08:33:15.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="问题">问题</h1>
-<pre><code>curl https://192.168.0.200:8443
-提示curl: (60) Peer's Certificate issuer is not recognized.
-curl: (60) Peer's Certificate issuer is not recognized.
-More details here: http://curl.haxx.se/docs/sslcerts.html
-
-curl performs SSL certificate verification by default, using a &quot;bundle&quot;
- of Certificate Authority (CA) public keys (CA certs). If the default
- bundle file isn't adequate, you can specify an alternate file
- using the --cacert option.
-If this HTTPS server uses a certificate signed by a CA represented in
- the bundle, the certificate verification probably failed due to a
- problem with the certificate (it might be expired, or the name might
- not match the domain name in the URL).
-If you'd like to turn off curl's verification of the certificate, use
- the -k (or --insecure) option.
-</code></pre>
-<h1 id="mac-os-x">Mac OS X</h1>
-<h2 id="添加证书">添加证书：</h2>
-<pre><code>sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/new-root-certificate.crt
-</code></pre>
-<h2 id="移除证书">移除证书：</h2>
-<pre><code>sudo security delete-certificate -c &quot;&lt;name of existing certificate&gt;&quot;
-</code></pre>
-<h1 id="windows">Windows</h1>
-<h2 id="添加证书-2">添加证书：</h2>
-<pre><code>certutil -addstore -f &quot;ROOT&quot; new-root-certificate.crt
-</code></pre>
-<h2 id="移除证书-2">移除证书：</h2>
-<pre><code>certutil -delstore &quot;ROOT&quot; serial-number-hex
-</code></pre>
-<h1 id="linux-ubuntu-debian">Linux (Ubuntu, Debian)</h1>
-<h2 id="添加证书-3">添加证书：</h2>
-<pre><code>复制 CA 文件到目录： /usr/local/share/ca-certificates/
-执行:
-sudo cp foo.crt /usr/local/share/ca-certificates/foo.crt
-</code></pre>
-<h2 id="更新-ca-证书库">更新 CA 证书库:</h2>
-<pre><code>sudo update-ca-certificates
-</code></pre>
-<h2 id="移除证书-3">移除证书：</h2>
-<pre><code>Remove your CA.
-
-Update the CA store:
-
-sudo update-ca-certificates --fresh
-
-Restart Kerio Connect to reload the certificates in the 32-bit versions or Debian 7.
-</code></pre>
-<h1 id="linux-centos-6">Linux (CentOs 6)</h1>
-<h2 id="添加证书-4">添加证书：</h2>
-<p>// root-ca.crt 为ca证书</p>
-<pre><code>安装 ca-certificates package:
-
-yum install ca-certificates
-
-启用dynamic CA configuration feature:
-
-update-ca-trust force-enable
-
-Add it as a new file to /etc/pki/ca-trust/source/anchors/:
-cp root-ca.crt /etc/pki/ca-trust/source/anchors/
-
-执行:
-
-update-ca-trust extract
-
-Restart Kerio Connect to reload the certificates in the 32-bit version.
-</code></pre>
-<h1 id="linux-centos-5">Linux (CentOs 5)</h1>
-<h2 id="添加证书-5">添加证书：</h2>
-<pre><code>Append your trusted certificate to file /etc/pki/tls/certs/ca-bundle.crt
-
-cat foo.crt &gt;&gt; /etc/pki/tls/certs/ca-bundle.crt
-</code></pre>
-<h1 id="测试访问">测试访问</h1>
-<pre><code> curl -v &quot;https:/gitlab.test.com/micro-lib/server?go-get=1&quot;
-</code></pre>
 ]]></content>
     </entry>
 </feed>

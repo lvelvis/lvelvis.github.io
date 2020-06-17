@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>golang笔记-go mod与go vendor | lvelvis</title>
+<title>consul-删除无效服务与节点 | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1592387115194">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,8 +29,8 @@
 
 
 
-  <meta name="description" content="golang笔记-go mod与go vendor" />
-  <meta name="keywords" content="" />
+  <meta name="description" content="consul-删除无效服务与节点" />
+  <meta name="keywords" content="consul" />
 </head>
 
 <body>
@@ -178,8 +178,7 @@
       <div class="sidebar-body mist" id="sidebar_body">
         
           
-            <div class="post-side-meta" id="post_side_meta">
-              
+            
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -242,192 +241,6 @@
 
 
 </div>
-            </div>
-            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
-              <div class="toc-box right-motion">
-  <div class="toc-wrapper auto-number auto"
-    id="toc_wrapper">
-    <ul class="markdownIt-TOC">
-<li><a href="#go-mod-%E4%BD%BF%E7%94%A8">go mod 使用</a></li>
-<li><a href="#go-vendor">go vendor</a></li>
-</ul>
-
-  </div>
-</div>
-
-<script>
-
-  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
-  let active = 'active-show', activeClass = 'active-current';
-  let tocWrapper = document.querySelector('#toc_wrapper');
-  let tocContent = tocWrapper.children[0];
-  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
-
-  function addTocNumber(elem, deep) {
-    if (!elem) {
-      return;
-    }
-    let prop = elem.__proto__;
-
-    if (prop === HTMLUListElement.prototype) {
-      for (let i = 0; i < elem.children.length; i++) {
-        addTocNumber(elem.children[i], deep + (i + 1) + '.');
-      }
-    } else if (prop === HTMLLIElement.prototype) {
-      // 保存li元素
-      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
-        lList.push(elem);
-      }
-      for (let i = 0; i < elem.children.length; i++) {
-        let cur = elem.children[i];
-        if (cur.__proto__ === HTMLAnchorElement.prototype) {
-          if (autoNumber) {
-            cur.text = deep + ' ' + cur.text;
-          }
-        } else if (cur.__proto__ === HTMLUListElement.prototype) {
-          addTocNumber(cur, deep);
-        }
-      }
-    }
-  }
-
-  function removeParentActiveClass() {
-    let parents = tocContent.querySelectorAll('.' + active)
-    parents.forEach(function (elem) {
-      elem.classList.remove(active);
-    });
-  }
-
-  function addActiveClass(index) {
-    if (index >= 0 && index < hList.length) {
-      lList[index].classList.add(activeClass);
-    }
-  }
-
-  function removeActiveClass(index) {
-    if (index >= 0 && index < hList.length) {
-      lList[index].classList.remove(activeClass);
-    }
-  }
-
-  function addActiveLiElemment(elem, parent) {
-    if (!elem || elem === parent) {
-      return;
-    } else {
-      if (elem.__proto__ === HTMLLIElement.prototype) {
-        elem.classList.add(active);
-      }
-      addActiveLiElemment(elem.parentElement, parent);
-    }
-  }
-
-  function showToc() {
-    if (tocWrapper) {
-      postBody = document.querySelector('#post_body');
-      for (let i = 0; i < postBody.children.length; i++) {
-        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
-          hList.push(postBody.children[i]);
-        }
-      }
-      if (tocWrapper.classList.contains('compress')) {
-        tocContent.classList.add('closed');
-      } else if (tocWrapper.classList.contains('no_compress')) {
-        tocContent.classList.add('expanded');
-      } else {
-        if (hList.length > 10) {
-          active = 'active-hidden'
-          tocContent.classList.add('closed');
-        } else {
-          tocContent.classList.add('expanded');
-        }
-      }
-    }
-  }
-
-  (function () {
-    // 处理不是从#一级标题开始目录
-    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
-      let con = tocContent.children[0].children[0];
-      tocContent.innerHTML = con.innerHTML;
-    }
-    let markdownItTOC = document.querySelector('.markdownIt-TOC');
-    let innerHeight = window.innerHeight;
-    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
-    addTocNumber(tocContent, '');
-  })();
-
-  document.addEventListener('scroll', function (e) {
-    if (lList.length <= 0) {
-      return;
-    }
-    let scrollTop = document.scrollingElement.scrollTop + 10;
-    let dir;
-
-    if (lastTop - scrollTop > 0) {
-      dir = 'up';
-    } else {
-      dir = 'down';
-    }
-
-    lastTop = scrollTop;
-    if (scrollTop <= 0) {
-      if (lastIndex >= 0 && lastIndex < hList.length) {
-        lList[lastIndex].classList.remove(activeClass);
-      }
-      return;
-    }
-
-    let current = 0, hasFind = false;
-    for (let i = 0; i < hList.length; i++) {
-      if (hList[i].offsetTop > scrollTop) {
-        current = i;
-        hasFind = true;
-        break;
-      }
-    }
-    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
-      current = hList.length - 1;
-    } else {
-      current--;
-    }
-    if (dir === 'down') {
-      if (current > lastIndex) {
-        addActiveClass(current);
-        removeActiveClass(lastIndex)
-        lastIndex = current;
-        removeParentActiveClass();
-        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
-      }
-    } else {
-      if (current < lastIndex) {
-        addActiveClass(current);
-        removeActiveClass(lastIndex);
-        lastIndex = current;
-        removeParentActiveClass();
-        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
-      }
-    }
-  });
-
-
-  window.addEventListener('load', function () {
-    showToc();
-    document.querySelector('#sidebar').style = 'display: block;';
-    tocWrapper.classList.add('toc-active');
-    setTimeout(function () {
-      if ("createEvent" in document) {
-        let evt = document.createEvent("HTMLEvents");
-        evt.initEvent("scroll", false, true);
-        document.dispatchEvent(evt);
-      }
-      else {
-        document.fireEvent("scroll");
-      }
-    }, 500)
-  })
-
-</script>
-            </div>
           
         
       </div>
@@ -515,8 +328,8 @@
           <div class="section bg-color post post-page">
             <header class="post-header">
   <h1 class="post-title">
-    <a class="post-title-link" href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">
-      golang笔记-go mod与go vendor
+    <a class="post-title-link" href="http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/">
+      consul-删除无效服务与节点
     </a>
   </h1>
   <div class="post-meta">
@@ -524,9 +337,22 @@
     <span class="meta-item pc-show">
       <i class="fa fa-calendar-o"></i>
       <span>发布于</span>
-      <span>2020-06-10</span>
+      <span>2020-06-17</span>
       <span class="post-meta-divider pc-show">|</span>
     </span>
+    
+    <span class="meta-item">
+      <i class="fa fa-folder-o"></i>
+      <span class="pc-show">分类于</span>
+      
+      
+      <a href="http://lvelvis.github.io/tag/Ud1dybROf/">
+        <span>consul</span>
+      </a>
+      
+      
+    </span>
+    <span class="post-meta-divider">|</span>
     
     <span class="meta-item">
       <i class="fa fa-clock-o"></i>
@@ -535,12 +361,12 @@
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>399<span class="pc-show">字数</span></span>
+      <span>362<span class="pc-show">字数</span></span>
     </span>
     
     
     
-    <span id="/post/golang-bi-ji-go-mod-yu-go-vendor/" data-flag-title="golang笔记-go mod与go vendor" class="meta-item pc-show leancloud_visitors">
+    <span id="/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/" data-flag-title="consul-删除无效服务与节点" class="meta-item pc-show leancloud_visitors">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-eye"></i>
       <span>浏览量：<span class="leancloud-visitors-count"></span></span>
@@ -549,40 +375,25 @@
   </div>
 </header>
             <div class="post-body next-md-body" id="post_body">
-              <h1 id="go-mod-使用">go mod 使用</h1>
-<p>解决的问题是golang不再依赖gopath的设置，下载下来的包可以直接使用。<br>
-go mod init ./<br>
-go build main.go 或 go build -mod=vendor main.go<br>
-go mod vendor #将包打到vendor文件夹下</p>
-<h1 id="go-vendor">go vendor</h1>
-<p>管理Golang项目依赖，应该是一个第三方的，但是比较好用。</p>
-<p>安装<br>
-go get -u github.com/kardianos/govendor</p>
-<p>使用一套连招：</p>
-<pre><code>govendor init # 创建vendor目录，创建vendor.json文件  
-govendor add +external #生成依赖包  
-govendor update +vendor # 更新vendor的包命令  
-状态	缩写状态	含义
-+local	l	本地包，即项目自身的包组织
-+external	e	外部包，即被 $GOPATH 管理，但不在 vendor 目录下
-+vendor	v	已被 govendor 管理，即在 vendor 目录下
-+std	s	标准库中的包
-+unused	u	未使用的包，即包在 vendor 目录下，但项目并没有用到
-+missing	m	代码引用了依赖包，但该包并没有找到
-+program	p	主程序包，意味着可以编译为执行文件
-+outside	 	外部包和缺失的包
-+all	 	所有的包
-命令	功能
-init	初始化 vendor 目录
-list	列出所有的依赖包
-add	添加包到 vendor 目录，如 govendor add +external 添加所有外部包
-add PKG_PATH	添加指定的依赖包到 vendor 目录
-update	从 $GOPATH 更新依赖包到 vendor 目录
-remove	从 vendor 管理中删除依赖
-status	列出所有缺失、过期和修改过的包
-fetch	添加或更新包到本地 vendor 目录
-sync	本地存在 vendor.json 时候拉去依赖包，匹配所记录的版本
-get	类似 go get 目录，拉取依赖包到 vendor 目录
+              <p>consul删除无效实例<br>
+http://127.0.0.1:8500/v1/agent/service/deregister/test-9c14fa595ddfb8f4c34c673c65b072bb</p>
+<p>test-9c14fa595ddfb8f4c34c673c65b072bb : 实例id<br>
+method : put</p>
+<p>删除无效节点<br>
+http://127.0.0.1:8500/v1/v1/agent/force-leave/4b36b27317a0</p>
+<p>consul leave #关闭consul并离开集群。也可以使用Ctrl+C或kill -INT来gracefully停止agent，这种体面的离开方式让consule可以有机会通知集群其他成员自己的离开。如果你强制地结束了agent，其他member会检测到这个节点的failed。当成员离开时，它的services和checks都会从catalog中移除。当成员failed时，它的health只是简单的被标记为critical，并不会从catalog中移除。Consul会自动尝试重新连接failed节点，允许它从恶劣的网络环境中恢复，显然离开的nodes不会被重新连接。另外，如果这个节点是server，体面的离开对避免潜在的中断的可能很重要。<br>
+为了防止dead nodes的积累，consul会自动把dead nodes移除出catalog。这个过程被称为reaping（收割）。默认是72小时的间隔（不建议更改）</p>
+<pre><code>#!/bin/bash
+clear 
+echo &quot;node_exporter注销工具&quot;
+read -p &quot;请输入要踢掉的节点IP,如果有多个IP,请使用英文格式 ',' 隔开: &quot; IP_LIST
+
+for IP in `echo &quot;${IP_LIST}&quot;|awk -F, 'BEGIN{OFS=&quot; &quot;}{$1=$1;printf(&quot;%s&quot;,$0);}'`
+do 
+   curl -XPUT http://10.100.x.x:8500/v1/agent/service/deregister/node-${IP}
+   echo &quot;${IP}节点已剔除!&quot;
+done
+echo &quot;${IP_LIST}完成剔除&quot;
 </code></pre>
 
             </div>
@@ -594,7 +405,7 @@ get	类似 go get 目录，拉取依赖包到 vendor 目录
     </li>
     <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/" title="golang笔记-go mod与go vendor">http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/</a>
+      <a href="http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/" title="consul-删除无效服务与节点">http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/</a>
     </li>
     <li class="post-copyright-license">
       <strong>版权声明： </strong>
@@ -603,19 +414,17 @@ get	类似 go get 目录，拉取依赖包到 vendor 目录
   </ul>
   <div class="tags">
     
+      <a href="http://lvelvis.github.io/tag/Ud1dybROf/"># consul</a>
+    
   </div>
   <div class="nav">
     <div class="nav-prev">
       
-        <i class="fa fa-chevron-left"></i>
-        <a class="nav-pc-next" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS</a class="nav-pc-next">
-        <a class="nav-mobile-prev" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">上一篇</a>
-      
     </div>
     <div class="nav-next">
       
-        <a class="nav-pc-next" title="golang笔记-zip日志使用" href="http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/">golang笔记-zip日志使用</a>
-        <a class="nav-mobile-next" title="golang笔记-zip日志使用" href="http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/">下一篇</a>
+        <a class="nav-pc-next" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS</a>
+        <a class="nav-mobile-next" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">下一篇</a>
         <i class="fa fa-chevron-right"></i>
       
     </div>
