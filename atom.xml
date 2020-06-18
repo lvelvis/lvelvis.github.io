@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-17T09:45:21.106Z</updated>
+    <updated>2020-06-18T02:44:56.086Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,264 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[jenkins x on kubernetes实践(支持多主)]]></title>
+        <id>http://lvelvis.github.io/post/jenkins-x-on-kubernetes-shi-jian-zhi-chi-duo-zhu/</id>
+        <link href="http://lvelvis.github.io/post/jenkins-x-on-kubernetes-shi-jian-zhi-chi-duo-zhu/">
+        </link>
+        <updated>2020-06-18T02:26:17.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="jenkins是什么">jenkins是什么？</h2>
+<p>Jenkins是一个开源的持续集成工具，可用于自动化的执行与构建，测试和交付或部署软件有关的各种任务,有非常丰富的插件支持。</p>
+<h2 id="kubernetes是什么">kubernetes是什么？</h2>
+<p>Kubernetes是容器集群管理系统，是一个开源的平台，可以实现容器集群的自动化部署、自动扩缩容、维护等功能。这个视频生动地介绍了k8s</p>
+<h2 id="jenkins-on-k8s-有什么好处">jenkins on k8s 有什么好处？</h2>
+<p>jenkins通过单Master多个Slave的方式提供服务，Master保存了任务的配置信息，安装的插件等等，而slave主要负责执行任务，在使用中存在以下几个问题：</p>
+<ol>
+<li>当存在多个slave时，运行slave的机器难以统一管理，每次添加新节点时总要做大量的重复工作。</li>
+<li>由于不同业务的构建频率并不相同，在使用会发现有很多slave大多数时间都处于空闲状态，造成资源浪费</li>
+<li>jenkins默认采取保守的调度方式，造成某些slave的负载过高，任务不能平均分配</li>
+</ol>
+<h2 id="jenkins架构">jenkins架构</h2>
+<p><img src="http://lvelvis.github.io/post-images/1592447693022.png" alt="" loading="lazy"><br>
+使用k8s管理jenkins具有以下优势：</p>
+<ol>
+<li>使用docker运行jenkins保证环境的一致性，可以根据不同业务选择合适的镜像</li>
+<li>k8s对抽象后的资源（pods）进行统一的管理调度，提供资源隔离和共享，使机器计算资源变得弹性可扩展,避免资源浪费。</li>
+<li>k8s提供容器的自愈功能，能够保证始终有一定数量的容器是可用的</li>
+<li>k8s默认的调度器提供了针对节点当前资源分配容器的调度策略，调度器支持插件化部署便于自定义。</li>
+</ol>
+<h2 id="一搭建环境">一，搭建环境</h2>
+<h3 id="工具准备">工具准备</h3>
+<pre><code>kubernetes v1.8.4
+docker v1.12.6
+jenkins master镜像 jenkins/jenkins:lts（v2.73.3）
+slave镜像 jenkinsci/jnlp-slave
+Kubernetes plugin (v1.1)
+</code></pre>
+<h3 id="安装kubernetes集群">安装kubernetes集群</h3>
+<p>中文教程：https://www.kubernetes.org.cn/2906.html<br>
+省略.....</p>
+<h2 id="二创建statefulset">二，创建StatefulSet</h2>
+<p>StatefulSet(有状态副本集)：Deployments适用于运行无状态应用，StatefulSet则为有状态的应用提供了支持，可以为应用提供有序的部署和扩展，稳定的持久化存储，我们使用SS来运行jenkins master。</p>
+<p>创建完整的Stateful Set需要依次创建一下对象：<br>
+1、Persistent Volume<br>
+2、Persistent Volume Claim<br>
+3、StatefulSet<br>
+4、Service</p>
+<p>创建PersistentVolume：<br>
+为了保存应用运行时的数据需要先创建k8s的卷文件，K8s中存在Volume和PersistentVolume两种类型：</p>
+<ol>
+<li>Volume：与docker中的volume不同在于Volume生命周期是和pod绑定的，与pod中的container无关。k8s为Volume提供了多种类型文件系统（cephfs,nfs…,简单起见我直接选择了hostPath，使用的node节点本地的存储系统）</li>
+<li>PersistentVolume:从名字可以看出来，PV的生命周期独立于使用它的pod，不会像volume随pod消失而消失，而是做为一个集群中的资源存在（像node节点一样），同时PV屏蔽了使用具体存储系统的细节。<br>
+k8s中的对象都是通过yaml文件来定义的，首先创建名为jenkins-volume.yml的文件:</li>
+</ol>
+<p>❣️❣️注意：PV的创建有静态，动态两种方式，动态创建可以减少管理员的操作步骤，需要提供指定的StorageClass。为了测试方便，所以我们直接选择静态创建，manual是一个不存在的storage class</p>
+<pre><code>kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: jenkins-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: &quot;/tmp/data&quot;
+</code></pre>
+<p>master节点执行下面的命令，PV就手动创建完了</p>
+<pre><code>kubectl create -f jenkins-volume1.yaml
+</code></pre>
+<p>创建PersistentVolumeClaim：</p>
+<pre><code>PersistentVolumeClaim(PVC):
+持久化存储卷索取，如果说PV是集群中的资源，PVC就是资源的消费者，PVC可以指定需要的资源大小和访问方式,pod不会和PV直接接触，而是通过PVC来请求资源，PV的生成阶段叫做provision,生成PV后会绑定到PVC对象，然后才能被其他对象使用。
+</code></pre>
+<p>PV和PVC的生命周期如下图：<br>
+<img src="http://lvelvis.github.io/post-images/1592447954632.png" alt="" loading="lazy">pv life<br>
+创建文件jenkins-claim.yaml<br>
+注意： name必须为jenkins-home-jenkins-0否则会绑定失败</p>
+<pre><code>kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: jenkins-home-jenkins-0
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+</code></pre>
+<p>执行命令kubectl create -f jenkins-claim.yaml<br>
+然后查看PVC是否创建成功，status为bound说明PVC已经绑定</p>
+<pre><code>[root@master ~]# kubectl describe pvc jenkins-home-jenkins-0
+Name:          jenkins-home-jenkins-0
+Namespace:     kubernetes-plugin
+StorageClass:  manual
+Status:        Bound
+Volume:        jenkins-volume
+Labels:        &lt;none&gt;
+Annotations:   pv.kubernetes.io/bind-completed=yes
+               pv.kubernetes.io/bound-by-controller=yes
+Capacity:      10Gi
+Access Modes:  RWO
+Events:        &lt;none&gt;
+</code></pre>
+<p>创建StatefulSet和Service：<br>
+从kubernetes-plugin github仓库下载jenkins.yml文件</p>
+<pre><code>wget https://raw.githubusercontent.com/jenkinsci/kubernetes-plugin/master/src/main/kubernetes/jenkins.yml
+修改jenkins.yml：
+去掉87行externalTrafficPolicy: Local（这是GKE使用的）
+修改83行type: LoadBalancer改为type: NodePort
+</code></pre>
+<p>注意：<br>
+service type=ClusterIP时只允许从集群内部访问， type设置为NodePort是为了从集群外的机器访问jenkins,请谨慎使用，开启NodePort会在所有节点（含master）的统一固定端口开放服务。</p>
+<p>执行命令</p>
+<pre><code>[root@master ~]# kubectl create -f jenkins.yml 
+statefulset &quot;jenkins&quot; created
+service &quot;jenkins&quot; created
+访问jenkins master,地址为masterip:32058
+</code></pre>
+<p>#查看映射的端口</p>
+<pre><code>[root@master ~]# kubectl get service jenkins
+NAME      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)                        AGE
+jenkins   NodePort   10.96.82.68   &lt;none&gt;        80:32058/TCP,50000:30345/TCP   1m
+
+</code></pre>
+<p>查看pod : jenkins-0的容器日志，粘贴下面的密码进入jenkins,jenkins安装完成。</p>
+<pre><code>Jenkins initial setup is required. An admin user has been created and a password generated.
+Please use the following password to proceed to installation:
+70aa7b41ba894855abccd09306625b8a
+</code></pre>
+<h3 id="问题分析">问题分析</h3>
+<p>1.创建stateful set时失败，提示”PersistentVolumeClaim is not bound: “jenkins-home-jenkins-0”：”<br>
+因为采用静态创建PV时，StatefulSet会按照固定名称查找PVC，PVC的名字要满足</p>
+<p>PVC_name == volumeClaimTemplates_name + “-“ + pod_name</p>
+<p>这里的名字就是jenkins-home-jenkins-0</p>
+<p>2.pod启动失败，jenkins用户没有目录权限<br>
+错误提示”touch: cannot touch ‘/var/jenkins_home/copy_reference_file.log’: Permission denied<br>
+Can not write to /var/jenkins_home/copy_reference_file.log. Wrong volume permissions?”<br>
+要确保节点目录开放权限,在node上执行命令：</p>
+<pre><code>sudo chown -R 1000:1000 /var/jenkins_home/
+sudo chown -R 1000:1000 /tmp/data
+##如果仍然失败，尝试在node上重启docker
+systemctl restart docker
+</code></pre>
+<p>注意pv指定的hostPath权限也要修改，否则是无效的</p>
+<h2 id="三-配置jenkins">三 ，配置jenkins</h2>
+<p>创建jenkins服务账号</p>
+<pre><code>wget https://raw.githubusercontent.com/jenkinsci/kubernetes-plugin/master/src/main/kubernetes/service-account.yml
+kubectl create -f service-account.yml
+</code></pre>
+<p>配置插件<br>
+访问http://masterip:32058/pluginManager/,搜索插件Kubernetes plugin安装；<br>
+访问 http://masterip:32058/configure<br>
+选择新建云–kubernetes,在URl填写api server地址，<br>
+执行kubectl describe命令，复制output中的token，填入到 ‘Kubernetes server certificate key’</p>
+<p>[root@master ~]# kubectl get secret<br>
+NAME                  TYPE                                  DATA      AGE<br>
+default-token-4kb54   kubernetes.io/service-account-token   3         1d<br>
+jenkins-token-wzbsx   kubernetes.io/service-account-token   3         1d<br>
+[root@master ~]# kubectl describe secret/jenkins-token-wzbsx<br>
+...<br>
+jenkins url,tunnel填写service的CLUSTER-IP即可，结果如图：<br>
+<img src="http://lvelvis.github.io/post-images/1592448124617.png" alt="" loading="lazy">peizhi1<br>
+选择add pod template，填写下面的内容，retain slave可以设置运行jenkins slave 的container空闲后能存活多久。<br>
+<img src="http://lvelvis.github.io/post-images/1592448148171.png" alt="" loading="lazy">content<br>
+插件配置完成。</p>
+<h2 id="四-测试">四 ，测试</h2>
+<ol>
+<li>扩容测试<br>
+StatefulSet扩容：<br>
+首先需要手动创建PV，PVC(见第二步),然后执行扩容命令</li>
+</ol>
+<pre><code>kubectl scale statefulset/jenkins --replicas=２
+</code></pre>
+<p>查看StatefulSet,此时已经拥有两个master节点，访问service时会随机将请求发送给后端的master。</p>
+<pre><code>[root@master ~]# kubectl get statefulset/jenkins 
+NAME      DESIRED   CURRENT   AGE
+jenkins   2         2         5d
+</code></pre>
+<p>虽然通过k8s可以轻松实现jenkins master节点的拓展，但是由于jenkins存储数据的方式通过本地文件存储，master之间的数据同步还是一个麻烦的问题，参考jenkins存储模型。</p>
+<p>jenkins master上保存的文件：</p>
+<pre><code>ls /temp/data
+jenkins.CLI.xml
+jenkins.install.InstallUtil.lastExecVersion
+jenkins.install.UpgradeWizard.state
+jenkins.model.ArtifactManagerConfiguration.xml
+jenkins.model.JenkinsLocationConfiguration.xml
+jobs
+logs
+nodeMonitors.xml
+nodes
+</code></pre>
+<ol start="2">
+<li>高可用测试<br>
+现在stateful set中已经有两个pod,在jenkins-1所在的节点执行docker stop停止运行jenkins-master的容器，同时在命令行查看pod的状态，可以看到jenkins-1异常（Error状态）之后慢慢恢复了运行状态（Running）：</li>
+</ol>
+<pre><code>[root@master ~]# kubectl get pods -w
+NAME        READY     STATUS    RESTARTS   AGE
+jenkins-0   1/1       Running   0          1d
+jenkins-1   0/1       Running   1         20h
+jenkins-1   1/1       Running   1         20h
+jenkins-1   0/1       Error     1         20h
+jenkins-1   0/1       CrashLoopBackOff   1         20h
+jenkins-1   0/1       Running   2         20h
+jenkins-1   1/1       Running   2         20h
+</code></pre>
+<p>kubectl describe pod jenkins-1查看pod的事件日志，k8s通过探针(probe)接口检测到服务停止之后自动执行了拉取镜像，重启container的操作。</p>
+<pre><code>Events:
+  Type     Reason      Age                From                              Message
+  ----     ------      ----               ----                              -------
+  Warning  Unhealthy   27m (x2 over 27m)  kubelet, iz8pscwd1fv6kprs1zw21kz  Readiness probe failed: HTTP probe failed with statuscode: 503
+  Warning  Unhealthy   27m (x2 over 27m)  kubelet, iz8pscwd1fv6kprs1zw21kz  Liveness probe failed: HTTP probe failed with statuscode: 503
+  Warning  Unhealthy   24m                kubelet, iz8pscwd1fv6kprs1zw21kz  Readiness probe failed: Get http://192.168.24.4:8080/login: dial tcp 192.168.24.4:8080: getsockopt: connection refused
+  Warning  BackOff     20m (x2 over 20m)  kubelet, iz8pscwd1fv6kprs1zw21kz  Back-off restarting failed container
+  Warning  FailedSync  20m (x2 over 20m)  kubelet, iz8pscwd1fv6kprs1zw21kz  Error syncing pod
+  Normal   Pulling     19m (x3 over 20h)  kubelet, iz8pscwd1fv6kprs1zw21kz  pulling image &quot;jenkins/jenkins:lts-alpine&quot;
+  Normal   Started     19m (x3 over 20h)  kubelet, iz8pscwd1fv6kprs1zw21kz  Started container
+  Normal   Pulled      19m (x3 over 20h)  kubelet, iz8pscwd1fv6kprs1zw21kz  Successfully pulled image &quot;jenkins/jenkins:lts-alpine&quot;
+  Normal   Created     19m (x3 over 20h)  kubelet, iz8pscwd1fv6kprs1zw21kz  Created container
+</code></pre>
+<ol start="3">
+<li>jenkins构建测试<br>
+当前集群中使用的jenkins slave镜像只包含一个java运行环境来运行jenkins-slave.jar,在实际使用中需要自定义合适的镜像。选择自定义镜像之后需要修改插件的配置，同样name命名为jnlp替换默认镜像，arguments安装工具提示填写即可。<br>
+<img src="http://lvelvis.github.io/post-images/1592448208433.png" alt="" loading="lazy"><br>
+创建job，同时开始构建,k8s会在不同节点上创建pod来运行任务</li>
+</ol>
+<p>jenkins默认调度策略</p>
+<ol>
+<li>尝试在上次构建的节点上构建，指定某台slave之后会一直使用。</li>
+<li>当队列有2个构建时，不会立刻创建两个executor,而是先创建一个executor然后尝试等待executor空闲，目的是保证每个executor被充分利用。<br>
+k8s调度策略<br>
+使用Pod.spec.nodeSelector根据label为pod选择node<br>
+3 .调度器scheduler有Predicates，Priorities两个阶段，分别负责节点过滤和评分排序，各个阶段都有k8s提供的检查项，我们可以自由组合。<br>
+（比如PodFitsResources检查cpu内存等资源，PodFitsHostPorts检查端口占用，SelectorSpreadPriority要求一个服务尽量分散分布）自定义schduler参考<br>
+资源不足时会发生什么<br>
+当前集群中有3个节点，我在node2运行一个CPU占用限制在80%的程序,然后设置jenkins插件ContainerTemplate的request和limit均为cpu 500m,内存500Mi,（500m代表单核CPU的50%）看一下pod会怎么调度<br>
+k8s仍然尝试在node2分配节点（为什么其他节点不行），结果POD处于pending状态：</li>
+</ol>
+<pre><code>{
+&quot;phase&quot;: &quot;Pending&quot;,
+&quot;conditions&quot;: [
+  {
+    &quot;type&quot;: &quot;PodScheduled&quot;,
+    &quot;status&quot;: &quot;False&quot;,
+    &quot;lastProbeTime&quot;: null,
+    &quot;lastTransitionTime&quot;: &quot;2017-12-09T08:29:10Z&quot;,
+    &quot;reason&quot;: &quot;Unschedulable&quot;,
+    &quot;message&quot;: &quot;No nodes are available that match all of the predicates: Insufficient cpu (4), PodToleratesNodeTaints (1).&quot;
+  }
+],
+&quot;qosClass&quot;: &quot;Guaranteed&quot;
+</code></pre>
+<p>最后pod被删除，而jenkins任务会阻塞一直到有其他空闲的slave出现。</p>
+<h2 id="五总结">五，总结</h2>
+<p>本文介绍了在k8s集群部署jenkins服务的方式和k8s带来的资源管理便捷，由于我也是刚开始接触k8s,所用的实例只是搭建了用于测试的实验环境，离在实际生产环境中使用还有问题需要验证。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[consul-删除无效服务与节点]]></title>
         <id>http://lvelvis.github.io/post/consul-shan-chu-wu-xiao-fu-wu-yu-jie-dian/</id>
@@ -1191,29 +1449,6 @@ beego.SetStaticPath(&quot;/js&quot;,&quot;js&quot;)
 默认情况下 beego 会判断目录下文件是否存在，不存在直接返回 404 页面，如果请求的是 index.html，那么由于 http.ServeFile 默认是会跳转的，不提供该页面的显示。
 
 因此 beego 可以设置 beego.BConfig.WebConfig.DirectoryIndex=true 这样来使得显示 index.html 页面。而且开启该功能之后，用户访问目录就会显示该目录下所有的文件列表。</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[用户空间挂载 CEPH 文件系统]]></title>
-        <id>http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/</id>
-        <link href="http://lvelvis.github.io/post/yong-hu-kong-jian-gua-zai-ceph-wen-jian-xi-tong/">
-        </link>
-        <updated>2020-05-08T06:03:36.000Z</updated>
-        <content type="html"><![CDATA[<p>Ceph v0.55 及后续版本默认开启了 cephx 认证。从用户空间（ FUSE ）挂载一 Ceph 文件系统前，确保客户端主机有一份 Ceph 配置副本、和具备 Ceph 元数据服务器能力的密钥环。</p>
-<p>1、 在客户端主机上，把监视器主机上的 Ceph 配置文件拷贝到 /etc/ceph/ 目录下</p>
-<pre><code>sudo mkdir -p /etc/ceph
-sudo scp {user}@{server-machine}:/etc/ceph/ceph.conf /etc/ceph/ceph.conf
-</code></pre>
-<p>2、 在客户端主机上，把监视器主机上的 Ceph 密钥环拷贝到 /etc/ceph 目录下</p>
-<pre><code>sudo scp {user}@{server-machine}:/etc/ceph/ceph.keyring /etc/ceph/ceph.keyring
-</code></pre>
-<p>3、 确保客户端机器上的 Ceph 配置文件和密钥环都有合适的权限位，如 chmod 644 。<br>
-cephx 如何配置请参考 CEPHX 配置参考。<br>
-要把 Ceph 文件系统挂载为用户空间文件系统，可以用 ceph-fuse 命令，例如：</p>
-<pre><code>sudo mkdir /home/usernname/cephfs
-sudo ceph-fuse -m 192.168.0.1:6789 /home/username/cephfs
-</code></pre>
-<p>详情见 <a href="http://docs.ceph.org.cn/man/8/ceph-fuse/">ceph-fuse</a></p>
 ]]></content>
     </entry>
 </feed>
