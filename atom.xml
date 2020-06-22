@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-06-18T02:49:38.869Z</updated>
+    <updated>2020-06-22T06:54:02.397Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,189 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[golang笔记-go-restful]]></title>
+        <id>http://lvelvis.github.io/post/golang-bi-ji-go-restful/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-go-restful/">
+        </link>
+        <updated>2020-06-22T06:45:14.000Z</updated>
+        <content type="html"><![CDATA[<p>用golang写一个restful api。如果您不知道什么是restful,可以看<a href="http://www.ruanyifeng.com/blog/2014/05/restful_api.html">阮一峰老师的教程</a></p>
+<p>首先，我们需要解决的是路由的问题，也就是如何将不同的url映射到不同的处理函数。</p>
+<pre><code>    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
+</code></pre>
+<p>作为一个初学者，我马上打开github,找到了<a href="https://github.com/avelino/awesome-go">awesome-go</a>,经过一番调研，我感觉有几个http router的库比较适合：bone, httprouter, mux</p>
+<h2 id="基本框架">基本框架</h2>
+<p>首先，我们设计了四个路由，分别为根据Id获得todo，增加todo，修改todo，删除todo。这里关于解析路由参数，我们使用了httprouter.Params的ByName函数。</p>
+<pre><code>package main
+
+import (
+  &quot;fmt&quot;
+  &quot;github.com/julienschmidt/httprouter&quot;
+  &quot;net/http&quot;
+  &quot;log&quot;
+  &quot;io&quot;
+  &quot;io/ioutil&quot;
+)
+
+func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  fmt.Fprintf(w, &quot;getTodo %s\n&quot;, todoid)
+}
+
+func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  fmt.Fprintf(w, &quot;addTodo! %s\n&quot;,body)
+}
+
+func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  fmt.Fprintf(w, &quot;deleteTodo %s\n&quot;, todoid)
+}
+
+func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  fmt.Fprintf(w, &quot;modifyTodo %s to %s\n&quot;, todoid, body)
+}
+
+func main() {
+    router := httprouter.New()
+    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
+    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
+}
+</code></pre>
+<p>我们可以用curl来测试一下我们的api,以put为例</p>
+<pre><code>curl --data &quot;content=shopping&amp;time=tomorrow&quot; http://127.0.0.1:8080/api/todo/123 -X PUT
+
+// modifyTodo 123 to content=shopping&amp;time=tomorrow
+</code></pre>
+<h2 id="json的解析">json的解析</h2>
+<p>我们在使用restful api的时候，常常需要给后台传递数据。从上面可以看到，我们通过http.Request的Body属性可以获得数据</p>
+<pre><code>body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+</code></pre>
+<p>从上面，我们读出的数据是[]byte，但是我们希望将其解析为对象，那么在这之前，我们需要先定义我们的struct。假设我们的todo只有一个字段，就是Name</p>
+<pre><code>type Todo struct {
+    Name      string
+}
+</code></pre>
+<p>现在我们可以这样解析</p>
+<pre><code>var todo Todo;
+json.Unmarshal(body, &amp;todo);
+</code></pre>
+<h2 id="model层设计">model层设计</h2>
+<pre><code>package main
+
+import (
+  &quot;gopkg.in/mgo.v2&quot;
+  &quot;fmt&quot;
+  &quot;log&quot;
+  &quot;gopkg.in/mgo.v2/bson&quot;
+)
+
+var session *mgo.Session
+
+func init(){
+  session,_ = mgo.Dial(&quot;mongodb://127.0.0.1&quot;)
+}
+
+type Todo struct {
+    Name      string
+}
+
+func createTodo(t Todo){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  c.Insert(&amp;t)
+}
+
+func queryTodoById(id string){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  result := Todo{}
+
+  err := c.Find(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}).One(&amp;result)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  fmt.Println(&quot;Todo:&quot;, result.Name)
+}
+
+func removeTodo(id string){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  err := c.Remove(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)})
+  if err != nil{
+    log.Fatal(err)
+  }
+}
+
+func updateTodo(id string, update interface{}){
+  //change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: &quot;hahaha&quot;}}
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  err := c.Update(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}, update)
+  if err != nil{
+    log.Fatal(err)
+  }
+}
+</code></pre>
+<p>我们定义了Todo的struct,并添加了几种函数。</p>
+<pre><code>package main
+
+import (
+  &quot;fmt&quot;
+  &quot;github.com/julienschmidt/httprouter&quot;
+  &quot;net/http&quot;
+  &quot;log&quot;
+  &quot;io&quot;
+  &quot;io/ioutil&quot;
+  &quot;encoding/json&quot;
+  &quot;gopkg.in/mgo.v2/bson&quot;
+)
+
+func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  queryTodoById(todoid)
+  fmt.Fprintf(w, &quot;getUser %s\n&quot;, todoid)
+}
+
+func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  var todo Todo;
+  json.Unmarshal(body, &amp;todo);
+  createTodo(todo)
+  fmt.Fprintf(w, &quot;addUser! %s\n&quot;,body)
+}
+
+func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  removeTodo(todoid)
+  fmt.Fprintf(w, &quot;deleteUser %s\n&quot;, todoid)
+}
+
+func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  var todo Todo
+  json.Unmarshal(body, &amp;todo);
+  change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: todo.Name}}
+  updateTodo(todoid,change)
+  fmt.Fprintf(w, &quot;modifyUser %s to %s\n&quot;, todoid, body)
+}
+
+func main() {
+    router := httprouter.New()
+    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
+    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
+}</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[jenkins x on kubernetes实践(支持多主)]]></title>
         <id>http://lvelvis.github.io/post/jenkins-x-on-kubernetes-shi-jian-zhi-chi-duo-zhu/</id>
@@ -1422,33 +1605,6 @@ status:
 
 </code></pre>
 <p><a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#create-horizontal-pod-autoscaler">官方hpa参数</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[beego静态文件加载路径修改]]></title>
-        <id>http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/</id>
-        <link href="http://lvelvis.github.io/post/beego-jing-tai-wen-jian-jia-zai-lu-jing-xiu-gai/">
-        </link>
-        <updated>2020-05-11T04:49:08.000Z</updated>
-        <content type="html"><![CDATA[<p>Go 语言内部其实已经提供了 http.ServeFile，通过这个函数可以实现静态文件的服务。</p>
-<p>beego 针对这个功能进行了一层封装，通过下面的方式进行静态文件注册：</p>
-<pre><code>beego.SetStaticPath(&quot;/static&quot;,&quot;public&quot;)
-</code></pre>
-<p>第一个参数是路径，url 路径信息<br>
-第二个参数是静态文件目录（相对应用所在的目录）<br>
-beego 支持多个目录的静态文件注册，用户可以注册如下的静态文件目录：</p>
-<pre><code>beego.SetStaticPath(&quot;/images&quot;,&quot;images&quot;)
-beego.SetStaticPath(&quot;/css&quot;,&quot;css&quot;)
-beego.SetStaticPath(&quot;/js&quot;,&quot;js&quot;)
-```　　
-
-设置了如上的静态目录之后，用户访问 /images/login/login.png，那么就会访问应用对应的目录下面的 images/login/login.png 文件。
-
-如果是访问 /static/img/logo.png，那么就访问 public/img/logo.png文件。
-
-默认情况下 beego 会判断目录下文件是否存在，不存在直接返回 404 页面，如果请求的是 index.html，那么由于 http.ServeFile 默认是会跳转的，不提供该页面的显示。
-
-因此 beego 可以设置 beego.BConfig.WebConfig.DirectoryIndex=true 这样来使得显示 index.html 页面。而且开启该功能之后，用户访问目录就会显示该目录下所有的文件列表。</code></pre>
 ]]></content>
     </entry>
 </feed>

@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>golang笔记-go mod与go vendor | lvelvis</title>
+<title>golang笔记-go-restful | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1592808835140">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,7 +29,7 @@
 
 
 
-  <meta name="description" content="golang笔记-go mod与go vendor" />
+  <meta name="description" content="golang笔记-go-restful" />
   <meta name="keywords" content="" />
 </head>
 
@@ -248,8 +248,13 @@
   <div class="toc-wrapper auto-number auto"
     id="toc_wrapper">
     <ul class="markdownIt-TOC">
-<li><a href="#go-mod-%E4%BD%BF%E7%94%A8">go mod 使用</a></li>
-<li><a href="#go-vendor">go vendor</a></li>
+<li>
+<ul>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E6%A1%86%E6%9E%B6">基本框架</a></li>
+<li><a href="#json%E7%9A%84%E8%A7%A3%E6%9E%90">json的解析</a></li>
+<li><a href="#model%E5%B1%82%E8%AE%BE%E8%AE%A1">model层设计</a></li>
+</ul>
+</li>
 </ul>
 
   </div>
@@ -515,8 +520,8 @@
           <div class="section bg-color post post-page">
             <header class="post-header">
   <h1 class="post-title">
-    <a class="post-title-link" href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">
-      golang笔记-go mod与go vendor
+    <a class="post-title-link" href="http://lvelvis.github.io/post/golang-bi-ji-go-restful/">
+      golang笔记-go-restful
     </a>
   </h1>
   <div class="post-meta">
@@ -524,23 +529,23 @@
     <span class="meta-item pc-show">
       <i class="fa fa-calendar-o"></i>
       <span>发布于</span>
-      <span>2020-06-10</span>
+      <span>2020-06-22</span>
       <span class="post-meta-divider pc-show">|</span>
     </span>
     
     <span class="meta-item">
       <i class="fa fa-clock-o"></i>
-      <span>2分钟</span>
+      <span>6分钟</span>
     </span>
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>399<span class="pc-show">字数</span></span>
+      <span>998<span class="pc-show">字数</span></span>
     </span>
     
     
     
-    <span id="/post/golang-bi-ji-go-mod-yu-go-vendor/" data-flag-title="golang笔记-go mod与go vendor" class="meta-item pc-show leancloud_visitors">
+    <span id="/post/golang-bi-ji-go-restful/" data-flag-title="golang笔记-go-restful" class="meta-item pc-show leancloud_visitors">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-eye"></i>
       <span>浏览量：<span class="leancloud-visitors-count"></span></span>
@@ -549,41 +554,181 @@
   </div>
 </header>
             <div class="post-body next-md-body" id="post_body">
-              <h1 id="go-mod-使用">go mod 使用</h1>
-<p>解决的问题是golang不再依赖gopath的设置，下载下来的包可以直接使用。<br>
-go mod init ./<br>
-go build main.go 或 go build -mod=vendor main.go<br>
-go mod vendor #将包打到vendor文件夹下</p>
-<h1 id="go-vendor">go vendor</h1>
-<p>管理Golang项目依赖，应该是一个第三方的，但是比较好用。</p>
-<p>安装<br>
-go get -u github.com/kardianos/govendor</p>
-<p>使用一套连招：</p>
-<pre><code>govendor init # 创建vendor目录，创建vendor.json文件  
-govendor add +external #生成依赖包  
-govendor update +vendor # 更新vendor的包命令  
-状态	缩写状态	含义
-+local	l	本地包，即项目自身的包组织
-+external	e	外部包，即被 $GOPATH 管理，但不在 vendor 目录下
-+vendor	v	已被 govendor 管理，即在 vendor 目录下
-+std	s	标准库中的包
-+unused	u	未使用的包，即包在 vendor 目录下，但项目并没有用到
-+missing	m	代码引用了依赖包，但该包并没有找到
-+program	p	主程序包，意味着可以编译为执行文件
-+outside	 	外部包和缺失的包
-+all	 	所有的包
-命令	功能
-init	初始化 vendor 目录
-list	列出所有的依赖包
-add	添加包到 vendor 目录，如 govendor add +external 添加所有外部包
-add PKG_PATH	添加指定的依赖包到 vendor 目录
-update	从 $GOPATH 更新依赖包到 vendor 目录
-remove	从 vendor 管理中删除依赖
-status	列出所有缺失、过期和修改过的包
-fetch	添加或更新包到本地 vendor 目录
-sync	本地存在 vendor.json 时候拉去依赖包，匹配所记录的版本
-get	类似 go get 目录，拉取依赖包到 vendor 目录
+              <p>用golang写一个restful api。如果您不知道什么是restful,可以看<a href="http://www.ruanyifeng.com/blog/2014/05/restful_api.html">阮一峰老师的教程</a></p>
+<p>首先，我们需要解决的是路由的问题，也就是如何将不同的url映射到不同的处理函数。</p>
+<pre><code>    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
 </code></pre>
+<p>作为一个初学者，我马上打开github,找到了<a href="https://github.com/avelino/awesome-go">awesome-go</a>,经过一番调研，我感觉有几个http router的库比较适合：bone, httprouter, mux</p>
+<h2 id="基本框架">基本框架</h2>
+<p>首先，我们设计了四个路由，分别为根据Id获得todo，增加todo，修改todo，删除todo。这里关于解析路由参数，我们使用了httprouter.Params的ByName函数。</p>
+<pre><code>package main
+
+import (
+  &quot;fmt&quot;
+  &quot;github.com/julienschmidt/httprouter&quot;
+  &quot;net/http&quot;
+  &quot;log&quot;
+  &quot;io&quot;
+  &quot;io/ioutil&quot;
+)
+
+func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  fmt.Fprintf(w, &quot;getTodo %s\n&quot;, todoid)
+}
+
+func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  fmt.Fprintf(w, &quot;addTodo! %s\n&quot;,body)
+}
+
+func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  fmt.Fprintf(w, &quot;deleteTodo %s\n&quot;, todoid)
+}
+
+func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  fmt.Fprintf(w, &quot;modifyTodo %s to %s\n&quot;, todoid, body)
+}
+
+func main() {
+    router := httprouter.New()
+    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
+    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
+}
+</code></pre>
+<p>我们可以用curl来测试一下我们的api,以put为例</p>
+<pre><code>curl --data &quot;content=shopping&amp;time=tomorrow&quot; http://127.0.0.1:8080/api/todo/123 -X PUT
+
+// modifyTodo 123 to content=shopping&amp;time=tomorrow
+</code></pre>
+<h2 id="json的解析">json的解析</h2>
+<p>我们在使用restful api的时候，常常需要给后台传递数据。从上面可以看到，我们通过http.Request的Body属性可以获得数据</p>
+<pre><code>body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+</code></pre>
+<p>从上面，我们读出的数据是[]byte，但是我们希望将其解析为对象，那么在这之前，我们需要先定义我们的struct。假设我们的todo只有一个字段，就是Name</p>
+<pre><code>type Todo struct {
+    Name      string
+}
+</code></pre>
+<p>现在我们可以这样解析</p>
+<pre><code>var todo Todo;
+json.Unmarshal(body, &amp;todo);
+</code></pre>
+<h2 id="model层设计">model层设计</h2>
+<pre><code>package main
+
+import (
+  &quot;gopkg.in/mgo.v2&quot;
+  &quot;fmt&quot;
+  &quot;log&quot;
+  &quot;gopkg.in/mgo.v2/bson&quot;
+)
+
+var session *mgo.Session
+
+func init(){
+  session,_ = mgo.Dial(&quot;mongodb://127.0.0.1&quot;)
+}
+
+type Todo struct {
+    Name      string
+}
+
+func createTodo(t Todo){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  c.Insert(&amp;t)
+}
+
+func queryTodoById(id string){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  result := Todo{}
+
+  err := c.Find(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}).One(&amp;result)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  fmt.Println(&quot;Todo:&quot;, result.Name)
+}
+
+func removeTodo(id string){
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  err := c.Remove(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)})
+  if err != nil{
+    log.Fatal(err)
+  }
+}
+
+func updateTodo(id string, update interface{}){
+  //change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: &quot;hahaha&quot;}}
+  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
+  err := c.Update(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}, update)
+  if err != nil{
+    log.Fatal(err)
+  }
+}
+</code></pre>
+<p>我们定义了Todo的struct,并添加了几种函数。</p>
+<pre><code>package main
+
+import (
+  &quot;fmt&quot;
+  &quot;github.com/julienschmidt/httprouter&quot;
+  &quot;net/http&quot;
+  &quot;log&quot;
+  &quot;io&quot;
+  &quot;io/ioutil&quot;
+  &quot;encoding/json&quot;
+  &quot;gopkg.in/mgo.v2/bson&quot;
+)
+
+func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  queryTodoById(todoid)
+  fmt.Fprintf(w, &quot;getUser %s\n&quot;, todoid)
+}
+
+func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  var todo Todo;
+  json.Unmarshal(body, &amp;todo);
+  createTodo(todo)
+  fmt.Fprintf(w, &quot;addUser! %s\n&quot;,body)
+}
+
+func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  removeTodo(todoid)
+  fmt.Fprintf(w, &quot;deleteUser %s\n&quot;, todoid)
+}
+
+func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+  todoid := params.ByName(&quot;todoid&quot;)
+  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+  var todo Todo
+  json.Unmarshal(body, &amp;todo);
+  change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: todo.Name}}
+  updateTodo(todoid,change)
+  fmt.Fprintf(w, &quot;modifyUser %s to %s\n&quot;, todoid, body)
+}
+
+func main() {
+    router := httprouter.New()
+    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
+    router.POST(&quot;/api/todo/&quot;, addTodo)
+    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
+    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
+    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
+}</code></pre>
 
             </div>
             <div class="post-footer">
@@ -594,7 +739,7 @@ get	类似 go get 目录，拉取依赖包到 vendor 目录
     </li>
     <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/" title="golang笔记-go mod与go vendor">http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/</a>
+      <a href="http://lvelvis.github.io/post/golang-bi-ji-go-restful/" title="golang笔记-go-restful">http://lvelvis.github.io/post/golang-bi-ji-go-restful/</a>
     </li>
     <li class="post-copyright-license">
       <strong>版权声明： </strong>
@@ -607,15 +752,11 @@ get	类似 go get 目录，拉取依赖包到 vendor 目录
   <div class="nav">
     <div class="nav-prev">
       
-        <i class="fa fa-chevron-left"></i>
-        <a class="nav-pc-next" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS</a class="nav-pc-next">
-        <a class="nav-mobile-prev" title="docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS" href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">上一篇</a>
-      
     </div>
     <div class="nav-next">
       
-        <a class="nav-pc-next" title="golang笔记-zip日志使用" href="http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/">golang笔记-zip日志使用</a>
-        <a class="nav-mobile-next" title="golang笔记-zip日志使用" href="http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/">下一篇</a>
+        <a class="nav-pc-next" title="jenkins x on kubernetes实践(支持多主)" href="http://lvelvis.github.io/post/jenkins-x-on-kubernetes-shi-jian-zhi-chi-duo-zhu/">jenkins x on kubernetes实践(支持多主)</a>
+        <a class="nav-mobile-next" title="jenkins x on kubernetes实践(支持多主)" href="http://lvelvis.github.io/post/jenkins-x-on-kubernetes-shi-jian-zhi-chi-duo-zhu/">下一篇</a>
         <i class="fa fa-chevron-right"></i>
       
     </div>
