@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-08-25T10:15:04.165Z</updated>
+    <updated>2020-09-04T02:57:17.867Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,108 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[logstash output file to HDFS]]></title>
+        <id>http://lvelvis.github.io/post/logstash-output-file-to-hdfs/</id>
+        <link href="http://lvelvis.github.io/post/logstash-output-file-to-hdfs/">
+        </link>
+        <updated>2020-09-04T02:45:33.000Z</updated>
+        <content type="html"><![CDATA[<p>logstash 直接把文件内容写入 hdfs 中， 并支持 hdfs 压缩格式。<br>
+logstash 需要安装第三方插件，webhdfs插件，通过hdfs的web接口写入。<br>
+即 http://namenode00:50070/webhdfs/v1/ 接口</p>
+<p>新版本logstash已默认安装webhdfs插件<br>
+官网地址及使用说明：<br>
+https://www.elastic.co/guide/en/logstash/current/plugins-outputs-webhdfs.html<br>
+检查hdfs的webhds接口</p>
+<pre><code>curl -i  &quot;http://namenode:50070/webhdfs/v1/?user.name=hadoop&amp;op=LISTSTATUS&quot;   
+HTTP/1.1 200 OK
+Cache-Control: no-cache
+Expires: Thu, 13 Jul 2017 04:53:39 GMT
+Date: Thu, 13 Jul 2017 04:53:39 GMT
+Pragma: no-cache
+Expires: Thu, 13 Jul 2017 04:53:39 GMT
+Date: Thu, 13 Jul 2017 04:53:39 GMT
+Pragma: no-cache
+Content-Type: application/json
+Set-Cookie: hadoop.auth=&quot;u=hadoop&amp;p=hadoop&amp;t=simple&amp;e=1499957619679&amp;s=KSxdSAtjXAllhn73vh1MAurG9Bk=&quot;; Path=/; Expires=Thu, 13-Jul-2017 14:53:39 GMT; HttpOnly
+Transfer-Encoding: chunked
+Server: Jetty(6.1.26)
+注释： active namenode 返回是200 ，standby namenode 返回是403.
+</code></pre>
+<p>测试hdfs是否正常通讯：</p>
+<pre><code>#通过webhdfs接口创建test.conf
+curl -i -X PUT &quot;http://hadoop-master:50070/webhdfs/v1/data/test.conf?user.name=hdfs&amp;op=CREATE&quot;
+curl -i -T test.conf &quot;http://hadoop-slave1:50075/webhdfs/v1/data/test.conf?op=CREATE&amp;user.name=hdfs&amp;namenoderpcaddress=hadoop-master:9000&amp;overwrite=false&quot;
+</code></pre>
+<p>配置<br>
+添加 logstash 一个配置文件</p>
+<p>vim /home/mtime/logstash-2.3.1/conf/hdfs.conf</p>
+<pre><code>input {
+    kafka {
+        bootstrap_servers =&gt; &quot;192.168.101.22:9092,192.168.101.23:9092,192.168.101.93:9092&quot;
+        topics =&gt; &quot;test-logs&quot;
+        group_id =&gt; &quot;hdfs-test-logs&quot;
+        codec =&gt; json
+	    consumer_threads =&gt; 15
+
+    }
+}
+
+filter {
+    date {
+        match =&gt; [&quot;time&quot;,&quot;yyyy-MM-dd HH:mm:ss Z&quot;]
+        target =&gt; &quot;@timestamp&quot;
+        timezone =&gt; &quot;Asia/Shanghai&quot;
+    }
+    ruby {
+        code =&gt; &quot;event.set('index.date', event.get('@timestamp').time.localtime.strftime('%Y%m%d'))&quot;
+    }
+    ruby {
+        code =&gt; &quot;event.set('index.hour', event.get('@timestamp').time.localtime.strftime('%H'))&quot;
+    }
+}
+output {            
+    webhdfs {
+           host =&gt; &quot;hadoop-master&quot;
+           port =&gt; 50070
+           path =&gt; &quot;/data/pt-collect-log/test-logs/%{index.date}/application-%{index.hour}.log&quot;
+           user =&gt; &quot;hdfs&quot;
+	   codec =&gt; line { format =&gt; &quot;%{message}&quot;}
+           flush_size =&gt; 1000
+           compression =&gt; &quot;gzip&quot;            
+           idle_flush_time =&gt; 10
+           retry_interval =&gt; 3
+	   retry_times =&gt; 100
+       }
+}
+</code></pre>
+<p>关于hdfs部分配置，可以在 plugins-outputs-webhdfs 官网找到<br>
+启动 logstart<br>
+cd /home/mtime/logstash-2.3.1/bin/<br>
+./logstash -f ../conf/hdfs.conf    # 为前台启动<br>
+报错处理</p>
+<pre><code>[WARN ][logstash.outputs.webhdfs ] Failed to flush outgoing items {:outgoing_count=&gt;160, :exception=&gt;&quot;WebHDFS::IOError&quot;,
+我将hdfs端口 由原来的50070 改为 14000 端口，就在不报错了。
+官方提供的例子中用的就是50070端口，一直没有尝试14000端口。
+
+还有：
+because this file lease is currently owned by DFSClient
+hadoop 租约问题，后期正常就没有了。
+执行recoverLease来释放文件的锁
+
+$ hdfs debug recoverLease -path /logstash/2017/02/10/go-03.log
+还有：
+:message=&gt;&quot;webhdfs write caused an exception: {\&quot;RemoteException\&quot;:{\&quot;message\&quot;:\&quot;Failed to APPEND_FILE
+当一个进程在读写这个文件的时候，另一个进程应该是不能同时写入的。
+我们由原来3个logstash同时消费，改为了1个logstash消费，不在报错了。
+这个应该也可以通过有话写入hdfs参数来解决。
+
+还有：
+Max write retries reached. Exception: initialize: name or service not known {:level=&gt;:error}
+losgstash 需要能解析所有 hadoop 集群所有节点的主机名。
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[ceph报错管理]]></title>
         <id>http://lvelvis.github.io/post/ceph-bao-cuo-guan-li/</id>
@@ -963,321 +1065,6 @@ this.Ctx.Input.Bind(&amp;ul, &quot;ul&quot;)  //ul ==[str array]
 user struct{Name}
 this.Ctx.Input.Bind(&amp;user, &quot;user&quot;)  //user =={Name:&quot;astaxie&quot;}
 </code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[golang笔记-json数据解析：Marshal与Unmarshal]]></title>
-        <id>http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/</id>
-        <link href="http://lvelvis.github.io/post/golang-bi-ji-json-shu-ju-jie-xi-marshal-yu-unmarshal/">
-        </link>
-        <updated>2020-05-28T10:15:31.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="简介">简介</h1>
-<p>Json(Javascript Object Nanotation)是一种数据交换格式，常用于前后端数据传输。任意一端将数据转换成json 字符串，另一端再将该字符串解析成相应的数据结构，如string类型，strcut对象等。</p>
-<p>go语言本身为我们提供了json的工具包”encoding/json”。<br>
-更多的使用方式，可以参考：https://studygolang.com/articles/6742</p>
-<h1 id="实现">实现</h1>
-<p>Json Marshal：将数据编码成json字符串<br>
-看一个简单的例子</p>
-<pre><code>type Stu struct {
-    Name  string `json:&quot;name&quot;`
-    Age   int
-    HIgh  bool
-    sex   string
-    Class *Class `json:&quot;class&quot;`
-}
-
-type Class struct {
-    Name  string
-    Grade int
-}
-
-func main() {
-    //实例化一个数据结构，用于生成json字符串
-    stu := Stu{
-        Name: &quot;张三&quot;,
-        Age:  18,
-        HIgh: true,
-        sex:  &quot;男&quot;,
-    }
-
-    //指针变量
-    cla := new(Class)
-    cla.Name = &quot;1班&quot;
-    cla.Grade = 3
-    stu.Class=cla
-
-    //Marshal失败时err!=nil
-    jsonStu, err := json.Marshal(stu)
-    if err != nil {
-        fmt.Println(&quot;生成json字符串错误&quot;)
-    }
-
-    //jsonStu是[]byte类型，转化成string类型便于查看
-    fmt.Println(string(jsonStu))
-}
-</code></pre>
-<p>结果：</p>
-<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
-</code></pre>
-<p>从结果中可以看出</p>
-<p>只要是可导出成员（变量首字母大写），都可以转成json。因成员变量sex是不可导出的，故无法转成json。</p>
-<p>如果变量打上了json标签，如Name旁边的 <code>json:&quot;name&quot;</code> ，那么转化成的json key就用该标签“name”，否则取变量名作为key，如“Age”，“HIgh”。</p>
-<p>bool类型也是可以直接转换为json的value值。Channel， complex 以及函数不能被编码json字符串。当然，循环的数据结构也不行，它会导致marshal陷入死循环。</p>
-<p>指针变量，编码时自动转换为它所指向的值，如cla变量。<br>
-（当然，不传指针，Stu struct的成员Class如果换成Class struct类型，效果也是一模一样的。只不过指针更快，且能节省内存空间。）</p>
-<p>最后，强调一句：json编码成字符串后就是纯粹的字符串了。</p>
-<p>上面的成员变量都是已知的类型，只能接收指定的类型，比如string类型的Name只能赋值string类型的数据。<br>
-但有时为了通用性，或使代码简洁，我们希望有一种类型可以接受各种类型的数据，并进行json编码。这就用到了interface{}类型。</p>
-<p>前言：<br>
-interface{}类型其实是个空接口，即没有方法的接口。go的每一种类型都实现了该接口。因此，任何其他类型的数据都可以赋值给interface{}类型。</p>
-<pre><code>type Stu struct {
-    Name  interface{} `json:&quot;name&quot;`
-    Age   interface{}
-    HIgh  interface{}
-    sex   interface{}
-    Class interface{} `json:&quot;class&quot;`
-}
-
-type Class struct {
-    Name  string
-    Grade int
-}
-
-func main() {
-    //与前面的例子一样
-    ......
-}
-</code></pre>
-<p>结果：</p>
-<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;Age&quot;:18,&quot;HIgh&quot;:true,&quot;class&quot;:{&quot;Name&quot;:&quot;1班&quot;,&quot;Grade&quot;:3}}
-</code></pre>
-<p>从结果中可以看出，无论是string，int，bool，还是指针类型等，都可赋值给interface{}类型，且正常编码，效果与前面的例子一样。</p>
-<p>补充：<br>
-在实际项目中，编码成json串的数据结构，往往是切片类型。如下定义了一个[]StuRead类型的切片</p>
-<pre><code>//正确示范
-
-//方式1：只声明，不分配内存
-var stus1 []*StuRead
-
-//方式2：分配初始值为0的内存
-stus2 := make([]*StuRead,0)
-
-//错误示范
-//new()只能实例化一个struct对象，而[]StuRead是切片，不是对象
-stus := new([]StuRead)
-
-stu1 := StuRead{成员赋值...}
-stu2 := StuRead{成员赋值...}
-
-//由方式1和2创建的切片，都能成功追加数据
-//方式2最好分配0长度，append时会自动增长。反之指定初始长度，长度不够时不会自动增长，导致数据丢失
-stus1 := appen(stus1,stu1,stu2)
-stus2 := appen(stus2,stu1,stu2)
-
-//成功编码
-json1,_ := json.Marshal(stus1)
-json2,_ := json.Marshal(stus2)
-</code></pre>
-<p>解码时定义对应的切片接受即可</p>
-<p>Json Unmarshal：将json字符串解码到相应的数据结构<br>
-我们将上面的例子进行解码</p>
-<pre><code>type StuRead struct {
-    Name  interface{} `json:&quot;name&quot;`
-    Age   interface{}
-    HIgh  interface{}
-    sex   interface{}
-    Class interface{} `json:&quot;class&quot;`
-    Test  interface{}
-}
-
-type Class struct {
-    Name  string
-    Grade int
-}
-
-func main() {
-    //json字符中的&quot;引号，需用\进行转义，否则编译出错
-    //json字符串沿用上面的结果，但对key进行了大小的修改，并添加了sex数据
-    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
-    str:=[]byte(data)
-
-    //1.Unmarshal的第一个参数是json字符串，第二个参数是接受json解析的数据结构。
-    //第二个参数必须是指针，否则无法接收解析的数据，如stu仍为空对象StuRead{}
-    //2.可以直接stu:=new(StuRead),此时的stu自身就是指针
-    stu:=StuRead{}
-    err:=json.Unmarshal(str,&amp;stu)
-
-    //解析失败会报错，如json字符串格式不对，缺&quot;号，缺}等。
-    if err!=nil{
-        fmt.Println(err)
-    }
-
-    fmt.Println(stu)
-}
-</code></pre>
-<p>结果：</p>
-<pre><code>{张三 18 true &lt;nil&gt; map[naME:1班 GradE:3] &lt;nil&gt;}
-</code></pre>
-<p>总结：</p>
-<p>json字符串解析时，需要一个“接收体”接受解析后的数据，且Unmarshal时接收体必须传递指针。否则解析虽不报错，但数据无法赋值到接受体中。如这里用的是StuRead{}接收。</p>
-<p>解析时，接收体可自行定义。json串中的key自动在接收体中寻找匹配的项进行赋值。匹配规则是：</p>
-<p>先查找与key一样的json标签，找到则赋值给该标签对应的变量(如Name)。<br>
-没有json标签的，就从上往下依次查找变量名与key一样的变量，如Age。或者变量名忽略大小写后与key一样的变量。如HIgh，Class。第一个匹配的就赋值，后面就算有匹配的也忽略。<br>
-(前提是该变量必需是可导出的，即首字母大写)。<br>
-不可导出的变量无法被解析（如sex变量，虽然json串中有key为sex的k-v，解析后其值仍为nil,即空值）</p>
-<p>当接收体中存在json串中匹配不了的项时，解析会自动忽略该项，该项仍保留原值。如变量Test，保留空值nil。</p>
-<p>你一定会发现，变量Class貌似没有解析为我们期待样子。因为此时的Class是个interface{}类型的变量，而json串中key为CLASS的value是个复合结构，不是可以直接解析的简单类型数据（如“张三”，18，true等）。所以解析时，由于没有指定变量Class的具体类型，json自动将value为复合结构的数据解析为map[string]interface{}类型的项。也就是说，此时的struct Class对象与StuRead中的Class变量没有半毛钱关系，故与这次的json解析没有半毛钱关系。</p>
-<p>让我们看一下这几个interface{}变量解析后的类型</p>
-<pre><code>func main() {
-    //与前边json解析的代码一致
-    ...
-    fmt.Println(stu) //打印json解析前变量类型
-    err:=json.Unmarshal(str,&amp;stu)
-    fmt.Println(&quot;--------------json 解析后-----------&quot;)
-    ... 
-    fmt.Println(stu) //打印json解析后变量类型    
-}
-
-//利用反射，打印变量类型
-func printType(stu *StuRead){
-    nameType:=reflect.TypeOf(stu.Name)
-    ageType:=reflect.TypeOf(stu.Age)
-    highType:=reflect.TypeOf(stu.HIgh)
-    sexType:=reflect.TypeOf(stu.sex)
-    classType:=reflect.TypeOf(stu.Class)
-    testType:=reflect.TypeOf(stu.Test)
-
-    fmt.Println(&quot;nameType:&quot;,nameType)
-    fmt.Println(&quot;ageType:&quot;,ageType)
-    fmt.Println(&quot;highType:&quot;,highType)
-    fmt.Println(&quot;sexType:&quot;,sexType)
-    fmt.Println(&quot;classType:&quot;,classType)
-    fmt.Println(&quot;testType:&quot;,testType)
-}
-</code></pre>
-<p>结果：</p>
-<pre><code>nameType: &lt;nil&gt;
-ageType: &lt;nil&gt;
-highType: &lt;nil&gt;
-sexType: &lt;nil&gt;
-classType: &lt;nil&gt;
-testType: &lt;nil&gt;
---------------json 解析后-----------
-nameType: string
-ageType: float64
-highType: bool
-sexType: &lt;nil&gt;
-classType: map[string]interface {}
-testType: &lt;nil&gt;
-</code></pre>
-<p>从结果中可见</p>
-<p>interface{}类型变量在json解析前，打印出的类型都为nil，就是没有具体类型，这是空接口（interface{}类型）的特点。</p>
-<p>json解析后，json串中value，只要是”简单数据”，都会按照默认的类型赋值，如”张三”被赋值成string类型到Name变量中，数字18对应float64，true对应bool类型。</p>
-<p>“简单数据”：是指不能再进行二次json解析的数据，如”name”:”张三”只能进行一次json解析。<br>
-“复合数据”：类似”CLASS\”:{\”naME\”:\”1班\”,\”GradE\”:3}这样的数据，是可进行二次甚至多次json解析的，因为它的value也是个可被解析的独立json。即第一次解析key为CLASS的value，第二次解析value中的key为naME和GradE的value</p>
-<p>对于”复合数据”，如果接收体中配的项被声明为interface{}类型，go都会默认解析成map[string]interface{}类型。如果我们想直接解析到struct Class对象中，可以将接受体对应的项定义为该struct类型。如下所示：</p>
-<p>type StuRead struct {<br>
-...<br>
-//普通struct类型<br>
-Class Class <code>json:&quot;class&quot;</code><br>
-//指针类型<br>
-Class *Class <code>json:&quot;class&quot;</code><br>
-}</p>
-<p>stu打印结果</p>
-<p>Class类型：{张三 18 true <nil> {1班 3} <nil>}<br>
-*Class类型：{张三 18 true <nil> 0xc42008a0c0 <nil>}</p>
-<p>可以看出，传递Class类型的指针时，stu中的Class变量存的是指针，我们可通过该指针直接访问所属的数据，如stu.Class.Name/stu.Class.Grade</p>
-<p>Class变量解析后类型</p>
-<p>classType: main.Class<br>
-classType: *main.Class<br>
-解析时，如果接受体中同时存在2个匹配的项，会发生什么呢？<br>
-测试1</p>
-<p>type StuRead struct {<br>
-NAme interface{}<br>
-Name  interface{}<br>
-NAMe interface{}    <code>json:&quot;name&quot;</code><br>
-}<br>
-结果1:</p>
-<pre><code>//当存在匹配的json标签时，其对应的项被赋值。
-//切记：匹配的标签可以没有，但有时最好只有一个哦
-{&lt;nil&gt; &lt;nil&gt; 张三}
-</code></pre>
-<p>测试2</p>
-<p>type StuRead struct {<br>
-NAme interface{}<br>
-Name  interface{}<br>
-NAMe interface{}    <code>json:&quot;name&quot;</code><br>
-NamE interface{}    <code>json:&quot;name&quot;</code><br>
-}<br>
-结果2</p>
-<pre><code>//当匹配的json标签有多个时，标签对应的项都不会被赋值。
-//忽略标签项，从上往下寻找第一个没有标签且匹配的项赋值
-{张三 &lt;nil&gt; &lt;nil&gt; &lt;nil&gt;}
-</code></pre>
-<p>测试3</p>
-<p>type StuRead struct {<br>
-NAme interface{}<br>
-Name  interface{}<br>
-}<br>
-结果3</p>
-<pre><code>//没有json标签时，从上往下，第一个匹配的项会被赋值哦
-{张三 &lt;nil&gt;}
-</code></pre>
-<p>测试4</p>
-<pre><code>type StuRead struct {
-    NAMe interface{}    `json:&quot;name&quot;`
-    NamE interface{}    `json:&quot;name&quot;`
-}
-</code></pre>
-<p>结果4</p>
-<pre><code>//当相同的json标签有多个，且没有不带标签的匹配项时，报错了哦
-# command-line-arguments
-src/test/b.go:48: stu.Name undefined (type *StuRead has no field or method Name, but does have NAMe)
-</code></pre>
-<p>可见，与前边说过的匹配规则是一致的。</p>
-<p>如果不想指定Class变量为具体的类型，仍想保留interface{}类型，但又希望该变量可以解析到struct Class对象中，这时候该怎么办呢？</p>
-<p>这种需求是很可能存在的，例如笔者我就碰到了</p>
-<p>办法还是有的，我们可以将该变量定义为json.RawMessage类型</p>
-<pre><code>type StuRead struct {
-    Name  interface{}
-    Age   interface{}
-    HIgh  interface{}
-    Class json.RawMessage `json:&quot;class&quot;` //注意这里
-}
-
-type Class struct {
-    Name  string
-    Grade int
-}
-
-func main() {
-    data:=&quot;{\&quot;name\&quot;:\&quot;张三\&quot;,\&quot;Age\&quot;:18,\&quot;high\&quot;:true,\&quot;sex\&quot;:\&quot;男\&quot;,\&quot;CLASS\&quot;:{\&quot;naME\&quot;:\&quot;1班\&quot;,\&quot;GradE\&quot;:3}}&quot;
-    str:=[]byte(data)
-    stu:=StuRead{}
-    _:=json.Unmarshal(str,&amp;stu)
-
-    //注意这里：二次解析！
-    cla:=new(Class)
-    json.Unmarshal(stu.Class,cla)
-
-    fmt.Println(&quot;stu:&quot;,stu)
-    fmt.Println(&quot;string(stu.Class):&quot;,string(stu.Class))
-    fmt.Println(&quot;class:&quot;,cla)
-    printType(&amp;stu) //函数实现前面例子有
-}
-</code></pre>
-<p>结果</p>
-<pre><code>stu: {张三 18 true [123 34 110 97 77 69 34 58 34 49 231 143 173 34 44 34 71 114 97 100 69 34 58 51 125]}
-string(stu.Class): {&quot;naME&quot;:&quot;1班&quot;,&quot;GradE&quot;:3}
-class: &amp;{1班 3}
-nameType: string
-ageType: float64
-highType: bool
-classType: json.RawMessage
-</code></pre>
-<p>从结果中可见</p>
-<p>接收体中，被声明为json.RawMessage类型的变量在json解析时，变量值仍保留json的原值，即未被自动解析为map[string]interface{}类型。如变量Class解析后的值为：{“naME”:”1班”,”GradE”:3}</p>
-<p>从打印的类型也可以看出，在第一次json解析时，变量Class的类型是json.RawMessage。此时，我们可以对该变量进行二次json解析，因为其值仍是个独立且可解析的完整json串。我们只需再定义一个新的接受体即可，如json.Unmarshal(stu.Class,cla)</p>
 ]]></content>
     </entry>
 </feed>
