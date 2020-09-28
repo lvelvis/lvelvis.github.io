@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-09-04T02:57:17.867Z</updated>
+    <updated>2020-09-28T08:17:23.125Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,20 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[kafka消费命令]]></title>
+        <id>http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/</id>
+        <link href="http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/">
+        </link>
+        <updated>2020-09-28T08:12:09.000Z</updated>
+        <content type="html"><![CDATA[<p>模拟生产消息：</p>
+<pre><code>bin/kafka-console-producer.sh --broker-list 192.168.101.100:9092 --topic flink-test
+</code></pre>
+<p>模拟消费数据(从开始位置消费)</p>
+<pre><code>bin/kafka-console-consumer.sh --bootstrap-server  192.168.101.100:9092  --topic flink-test --from-beginning  |head
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[logstash output file to HDFS]]></title>
         <id>http://lvelvis.github.io/post/logstash-output-file-to-hdfs/</id>
@@ -927,143 +941,6 @@ func init() {
 </code></pre>
 <p>日志输出：</p>
 <pre><code>{&quot;level&quot;:&quot;info&quot;,&quot;time&quot;:&quot;2020-06-02T19:41:37.799+0800&quot;,&quot;linenum&quot;:&quot;controllers/logger.go:59&quot;,&quot;msg&quot;:&quot;log 初始化成功&quot;,&quot;serviceName&quot;:&quot;k8s-websocket-dashboard&quot;}
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[golang笔记-beego获取url请求的参数]]></title>
-        <id>http://lvelvis.github.io/post/golang-bi-ji-beego-huo-qu-url-qing-qiu-de-can-shu/</id>
-        <link href="http://lvelvis.github.io/post/golang-bi-ji-beego-huo-qu-url-qing-qiu-de-can-shu/">
-        </link>
-        <updated>2020-06-02T04:00:50.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="获取参数">获取参数</h1>
-<p>我们经常需要获取用户传递的数据，包括Get、POST等方式的请求，beego里面会自动解析这些数据，你可以通过如下方式获取数据：</p>
-<p>GetString(key string) string<br>
-GetStrings(key string) []string<br>
-GetInt(key string) (int64, error)<br>
-GetBool(key string) (bool, error)<br>
-GetFloat(key string) (float64, error)<br>
-示例1：</p>
-<pre><code>func (this *MainController) Post() {
-    jsoninfo := &lt;strong&gt;this.GetString&lt;/strong&gt;(&quot;jsoninfo&quot;)
-    if jsoninfo == &quot;&quot; {
-        this.Ctx.WriteString(&quot;jsoninfo is empty&quot;)
-        return
-    }
-}```
-如果你需要的数据可能是其它类型，例如是int类型而不是int64，那么你需要这样处理：
-
-示例2：
-</code></pre>
-<p>func (this *MainController) Post() {<br>
-id := <strong>this.Input().Get</strong>(&quot;id&quot;)<br>
-intid, err := <strong>strconv.Atoi</strong>(id)<br>
-}```<br>
-更多其他的request的信息，用户可以通过this.Ctx.Request获取信息。</p>
-<p>关于该对象的属性和方法可参考request官方手册https://gowalker.org/net/http#Request</p>
-<h1 id="直接解析到struct">直接解析到struct</h1>
-<p>如果要把表单里的内容赋值到一个struct里，除了用上面的方法一个一个获取再赋值之外，<br>
-beego提供了通过另外一个更便捷的方式，就是通过struct的字段名或tag与表单字段对应直接解析到struct。</p>
-<p>示例3：</p>
-<p>定义struct</p>
-<pre><code>type user struct {
-    Id    int         `form:&quot;-&quot;`
-    Name  interface{} `form:&quot;&lt;strong&gt;username&lt;/strong&gt;&quot;`
-    Age   int         `form:&quot;&lt;strong&gt;age&lt;/strong&gt;&quot;`
-    Email string
-}
-</code></pre>
-<p>表单</p>
-<pre><code>&lt;form id=&quot;&lt;strong&gt;user&lt;/strong&gt;&quot;&gt;
-    名字：&lt;input name=&quot;&lt;strong&gt;username&lt;/strong&gt;&quot; type=&quot;text&quot; /&gt;
-    年龄：&lt;input name=&quot;&lt;strong&gt;age&lt;/strong&gt;&quot; type=&quot;text&quot; /&gt;
-    邮箱：&lt;input name=&quot;Email&quot; type=&quot;text&quot; /&gt;
-    &lt;input type=&quot;submit&quot; value=&quot;提交&quot; /&gt;
-&lt;/form&gt;
-</code></pre>
-<p>controller里解析</p>
-<pre><code>func (this *MainController) Post() {
-    u := &lt;strong&gt;user{}&lt;/strong&gt;
-    if err := this.ParseForm(&lt;strong&gt;&amp;u&lt;/strong&gt;); err != nil {
-        //handle error
-    }
-}　　
-</code></pre>
-<p>需要说明的是：</p>
-<p>（1）structTag form的定义和renderform方法共用一个标签。</p>
-<p>（2）定义struct时，字段名后如果有form这个tag，则会把form表单里的name和tag的名字一样的字段赋值给这个字段，</p>
-<p>否则就会把form表单里与字段名一样的表单内容赋值给这个字段。</p>
-<p>例如上面的例子中，会把表单中的username和age分别赋值给user里的Name和Age字段，而Email里的内容则会赋值给Email这个字段。</p>
-<p>（3）调用Controller PraseForm这个方法的时候，传入的参数必须为一个struct的指针，否则对struct的赋值不会成功并返回xx must be a struct pointer的错误。</p>
-<p>（4）如果要忽略一个字段，有两种方法，一是：字段名小写开头，二是：form标签设置为_</p>
-<h1 id="获取request-body里的内容">获取Request Body里的内容</h1>
-<p>在API的开发中，我们经常会用到JSON或XML来作为数据交互的格式，如何在beego中获取Request Body里的JSON或XML的数据呢？</p>
-<p>首先，在配置文件里设置copyrequestbody = true</p>
-<p>其次，在Controller中：</p>
-<p>示例4：</p>
-<pre><code>func (this *ObjectController) Post() {
-    var ob models.Object
-    var err error
-    if err = json.Unmarshal(this.Ctx.Input.RequestBody, &amp;ob); err == nil {
-        objectid := models.AddOne(ob)
-        this.Data[&quot;json&quot;] = &quot;{\&quot;ObjectId\&quot;:\&quot;&quot; + objectid + &quot;\&quot;}&quot;
-    } else {
-        this.Data[&quot;json&quot;] = err.Error()
-    }
-    this.ServeJSON()
-}
-</code></pre>
-<p></p>
-<h1 id="文件上传">文件上传</h1>
-<p>在beego中你可以很容易的处理文件上传，就是别忘记在你的form表单中增加“enctype=&quot;multipart/form-data”，否则你的浏览器不会传输你的上传文件。</p>
-<p>文件上传之后一般是放在系统的内存里面，如果文件的size大于设置的缓存大小，那么就放在临时文件中，</p>
-<p>默认的缓存内存是64M，你可以通过如下方式来调整这个缓存内存的大小。</p>
-<p>beego.MaxMemory = 1&lt;&lt;22<br>
-或者在配置文件中通过如下设置：</p>
-<p>maxmemory = 1&lt;&lt;22<br>
-Beego提供了两个很方便的方法来处理文件上传：</p>
-<p>（1）GetFile(key string) (multipart.File, *multipart.FileHeader, error)</p>
-<p>该方法主要用于用户读取表单中的文件名the_file，然后返回相应的信息，用户根据这些变量来处理文件上传：过滤、保存文件等。</p>
-<p>（2）SaveToFile(fromfile, tofile string) error</p>
-<p>该方法是在GetFile的基础上实现了快速保存的功能，fromfile是提交的时候html表单中的name。</p>
-<p>示例5</p>
-<p>表单：</p>
-<pre><code>&lt;form enctype=&quot;multipart/form-data&quot; method=&quot;post&quot;&gt;
-    &lt;input type=&quot;file&quot; name=&quot;uploadname&quot; /&gt;
-    &lt;input type=&quot;submit&quot;&gt;
-&lt;/form&gt;
-</code></pre>
-<p>Controller中代码：</p>
-<pre><code>func (c *FormController) Post() {
-    f, h, err := c.GetFile(&quot;uploadname&quot;)
-    if err != nil {
-        log.Fatal(&quot;getfile err &quot;, err)
-    }
-    defer f.Close()
-    c.SaveToFile(&quot;uploadname&quot;, &quot;static/upload/&quot; + h.Filename) // 保存位置在 static/upload, 没有文件夹要先创建
-     
-}
-</code></pre>
-<h1 id="数据绑定">数据绑定</h1>
-<p>支持从用户请求中直接数据bind到指定的对象。</p>
-<p>示例6：</p>
-<pre><code>var id int
-this.Ctx.Input.Bind(&amp;id, &quot;id&quot;)  //id ==123
- 
-var isok bool
-this.Ctx.Input.Bind(&amp;isok, &quot;isok&quot;)  //isok ==true
- 
-var ft float64
-this.Ctx.Input.Bind(&amp;ft, &quot;ft&quot;)  //ft ==1.2
- 
-ol := make([]int, 0, 2)
-this.Ctx.Input.Bind(&amp;ol, &quot;ol&quot;)  //ol ==[1 2]
- 
-ul := make([]string, 0, 2)
-this.Ctx.Input.Bind(&amp;ul, &quot;ul&quot;)  //ul ==[str array]
- 
-user struct{Name}
-this.Ctx.Input.Bind(&amp;user, &quot;user&quot;)  //user =={Name:&quot;astaxie&quot;}
 </code></pre>
 ]]></content>
     </entry>
