@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-09-28T08:17:23.125Z</updated>
+    <updated>2020-10-27T04:17:38.117Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,89 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[clickhouse基本操作]]></title>
+        <id>http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/</id>
+        <link href="http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/">
+        </link>
+        <updated>2020-10-27T04:09:31.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="一-先来说一下clickhouse为啥快">一、先来说一下，ClickHouse为啥快</h2>
+<pre><code>ClickHouse有多少CPU，吃多少资源，所以飞快；
+ClickHouse不支持事务，不存在隔离级别。这里要额外说一下，有人觉得，你一个数据库都不支持事务，不支持ACID还玩个毛。ClickHouse的定位是分析性数据库，而不是严格的关系型数据库。又有人要问了，数据都不一致，统计个毛。举个例子，汽车的油表是100%准确么？为了获得一个100%准确的值，难道每次测量你都要停车检查么？统计数据的意义在于用大量的数据看规律，看趋势，而不是100%准确。
+IO方面，MySQL是行存储，ClickHouse是列存储，后者在count()这类操作天然有优势，同时，在IO方面，MySQL需要大量随机IO，ClickHouse基本是顺序IO。
+有人可能觉得上面的数据导入的时候，数据肯定缓存在内存里了，这个的确，但是ClickHouse基本上是顺序IO，用过就知道了，对IO基本没有太高要求，当然，磁盘越快，上层处理越快，但是99%的情况是，CPU先跑满了（数据库里太少见了，大多数都是IO不够用）
+</code></pre>
+<h2 id="二-创建库">二、创建库</h2>
+<p>CREATE/ATTACH DATABASE zabbix ENGINE = Ordinary;<br>
+ATTACH 也可以建库，但是metadata目录下不会生成.sql文件，一般用于metadata元数据sql文件被删除后，恢复库表结构使用</p>
+<h2 id="三-创建本地表">三、创建本地表</h2>
+<p>CREATE TABLE test02( id UInt16,col1 String,col2 String,create_date date ) ENGINE = MergeTree(create_date, (id), 8192);<br>
+ENGINE：是表的引擎类型，<br>
+MergeTree：最常用的，MergeTree要求有一个日期字段，还有主键。<br>
+Log引擎没有这个限制，也是比较常用。<br>
+ReplicatedMergeTree：MergeTree的分支，表复制引擎。<br>
+Distributed：分布式引擎。<br>
+create_date：是表的日期字段，一个表必须要有一个日期字段。<br>
+id：是表的主键，主键可以有多个字段，每个字段用逗号分隔。<br>
+8192：是索引粒度，用默认值8192即可。</p>
+<h2 id="四-创建分布式表">四、创建分布式表</h2>
+<p>CREATE TABLE distributed_table AS table ENGINE = Distributed(cluster, db, table, rand());<br>
+cluster：配置文件中的群集名称。<br>
+db：库名。<br>
+table：本地表名。<br>
+rand()：分片方式：随机。<br>
+intHash64():分片方式：指定字段做hash。<br>
+Distribute引擎会选择每个分发到的Shard中的”健康的”副本执行SQL<br>
+<img src="http://lvelvis.github.io/post-images/1603771933311.jpg" alt="" loading="lazy"></p>
+<h2 id="五-ddl">五、DDL</h2>
+<p>如果想按集群操作，需要借助zookeeper，在config.xml中添加配置<br>
+&lt;distributed_ddl&gt;<br>
+<path>/clickhouse/task_queue/ddl</path><br>
+&lt;/distributed_ddl&gt;<br>
+一个节点创建表，会同步到各个节点<br>
+CREATE TABLE db.table [ON CLUSTER cluster] (...)<br>
+添加、删除、修改列<br>
+ALTER TABLE [db].table [ON CLUSTER cluster] ADD|DROP|MODIFY COLUMN ...<br>
+rename 支持*MergeTree和Distributed<br>
+rename table db.table1 to db.table2 [ON CLUSTER cluster]<br>
+truncate table db.table;不支持Distributed引擎</p>
+<h2 id="六-deleteupdate-不支持distributed引擎">六、delete/update 不支持Distributed引擎</h2>
+<p>ALTER TABLE [db.]table DELETE WHERE filter_expr...<br>
+ALTER TABLE [db.]table UPDATE column1 = expr1 [, ...] WHERE ...</p>
+<h2 id="七-分区表">七、分区表</h2>
+<p>按时间分区：<br>
+toYYYYMM(EventDate)：按月分区<br>
+toMonday(EventDate)：按周分区<br>
+toDate(EventDate)：按天分区<br>
+按指定列分区：<br>
+PARTITION BY cloumn_name<br>
+对分区的操作：<br>
+alter table test1 DROP PARTITION [partition] #删除分区<br>
+alter table test1 DETACH PARTITION [partition]#下线分区<br>
+alter table test1 ATTACH PARTITION [partition]#恢复分区<br>
+alter table .test1 FREEZE PARTITION [partition]#备份分区</p>
+<h2 id="八-数据同步">八、数据同步</h2>
+<ol>
+<li>采用remote函数<br>
+insert into db.table select * from remote('目标IP',db.table,'user','passwd')</li>
+<li>csv文件导入clickhouse<br>
+cat test.csv | clickhouse-client -u user --password password --query=&quot;INSERT INTO db.table FORMAT CSV&quot;</li>
+<li>同步mysql库中表<br>
+CREATE TABLE tmp ENGINE = MergeTree ORDER BY id AS SELECT * FROM mysql('hostip:3306', 'db', 'table', 'user', 'passwd') ;<br>
+4） clickhouse-copier 工具</li>
+</ol>
+<h2 id="九-时间戳转换">九、时间戳转换</h2>
+<p>select toUnixTimestamp('2018-11-25 00:00:02');<br>
+select toDateTime(1543075202);</p>
+<h2 id="十-其他事项">十、其他事项</h2>
+<ol>
+<li>clickhouse的cluster环境中，每台server的地位是等价的，即不存在master-slave之说，是multi-master模式。</li>
+<li>各replicated表的宿主server上要在hosts里配置其他replicated表宿主server的ip和hostname的映射。</li>
+<li>上面描述的在不同的server上建立全新的replicated模式的表，如果在某台server上已经存在一张replicated表，并且表中已经有数据，这时在另外的server上执行完replicated建表语句后，已有数据会自动同步到其他server上面。</li>
+<li>如果zookeeper挂掉，replicated表会切换成read-only模式，不再进行数据同步，系统会周期性的尝试与zk重新建立连接。</li>
+</ol>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[kafka消费命令]]></title>
         <id>http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/</id>
@@ -837,110 +920,6 @@ status	列出所有缺失、过期和修改过的包
 fetch	添加或更新包到本地 vendor 目录
 sync	本地存在 vendor.json 时候拉去依赖包，匹配所记录的版本
 get	类似 go get 目录，拉取依赖包到 vendor 目录
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[golang笔记-zip日志使用]]></title>
-        <id>http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/</id>
-        <link href="http://lvelvis.github.io/post/golang-bi-ji-zip-ri-zhi-shi-yong/">
-        </link>
-        <updated>2020-06-03T06:17:23.000Z</updated>
-        <content type="html"><![CDATA[<p>在beego中使用zap管理日志，很方便👍<br>
-需要在conf/app.conf定义几个参数</p>
-<pre><code>appname = web-terminal
-httpport = &quot;9600&quot;
-
-runmode = &quot;prod&quot;
-LogLevel = &quot;info&quot;
-autorender = true
-recoverpanic = false
-copyrequestbody = true
-viewspath = &quot;static&quot;
-LogPath = &quot;logs/k8s-websocket.log&quot;
-</code></pre>
-<p>logger.go</p>
-<pre><code>package controllers
-
-import (
-	&quot;os&quot;
-
-	&quot;github.com/astaxie/beego&quot;
-	&quot;github.com/natefinch/lumberjack&quot;
-	&quot;go.uber.org/zap&quot;
-	&quot;go.uber.org/zap/zapcore&quot;
-)
-
-//MyLogger初始化zaplogger日志库
-var MyLogger *zap.Logger
-
-func initLogger(logpath string, loglevel string) *zap.Logger {
-
-	// 设置日志级别
-	var level zapcore.Level
-	switch loglevel {
-	case &quot;debug&quot;:
-		level = zap.DebugLevel
-	case &quot;info&quot;:
-		level = zap.InfoLevel
-	case &quot;error&quot;:
-		level = zap.ErrorLevel
-	default:
-		level = zap.InfoLevel
-	}
-
-	hook := lumberjack.Logger{
-		Filename:   logpath, // 日志文件路径
-		MaxSize:    20,      // 每个日志文件保存的最大尺寸 单位：M
-		MaxBackups: 10,      // 日志文件最多保存多少个备份
-		MaxAge:     7,       // 文件最多保存多少天
-		Compress:   true,    // 是否压缩
-	}
-
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        &quot;time&quot;,
-		LevelKey:       &quot;level&quot;,
-		NameKey:        &quot;logger&quot;,
-		CallerKey:      &quot;linenum&quot;,
-		MessageKey:     &quot;msg&quot;,
-		StacktraceKey:  &quot;stacktrace&quot;,
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,  // 小写编码器
-		EncodeTime:     zapcore.ISO8601TimeEncoder,     // ISO8601 UTC 时间格式
-		EncodeDuration: zapcore.SecondsDurationEncoder, //
-		EncodeCaller:   zapcore.ShortCallerEncoder,     // 短路径编码器
-		EncodeName:     zapcore.FullNameEncoder,
-	}
-
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),                                           // 编码器配置
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(&amp;hook)), // 打印到控制台和文件
-		level, // 日志级别
-	)
-
-	// 开启开发模式，堆栈跟踪
-	caller := zap.AddCaller()
-	// 开启文件及行号
-	development := zap.Development()
-
-	// 设置初始化字段
-	filed := zap.Fields(zap.String(&quot;serviceName&quot;, &quot;k8s-websocket-dashboard&quot;))
-	// 构造日志
-	logger := zap.New(core, caller, development, filed)
-
-	logger.Info(&quot;initlog 初始化成功&quot;)
-	return logger
-}
-
-// 初始化日志
-func init() {
-	logPath := beego.AppConfig.String(&quot;LogPath&quot;)
-	loglevel := beego.AppConfig.String(&quot;LogLevel&quot;)
-	MyLogger = initLogger(logPath, loglevel)
-}
-</code></pre>
-<p>日志输出：</p>
-<pre><code>{&quot;level&quot;:&quot;info&quot;,&quot;time&quot;:&quot;2020-06-02T19:41:37.799+0800&quot;,&quot;linenum&quot;:&quot;controllers/logger.go:59&quot;,&quot;msg&quot;:&quot;log 初始化成功&quot;,&quot;serviceName&quot;:&quot;k8s-websocket-dashboard&quot;}
 </code></pre>
 ]]></content>
     </entry>

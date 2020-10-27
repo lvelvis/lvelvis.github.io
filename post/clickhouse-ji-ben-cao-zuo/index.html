@@ -8,7 +8,7 @@
 <meta name="keywords" content="lvelvis个人博客">
 <meta name="description" content="时光,浓淡相宜;人心,远近相安;这就是最好的生活">
 <meta name="theme-color" content="#000">
-<title>lvelvis</title>
+<title>clickhouse基本操作 | lvelvis</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1603772234766">
 <link rel="stylesheet" href="/styles/main.css">
 <link rel="stylesheet" href="/media/css/mist.css">
@@ -29,6 +29,8 @@
 
 
 
+  <meta name="description" content="clickhouse基本操作" />
+  <meta name="keywords" content="" />
 </head>
 
 <body>
@@ -158,10 +160,26 @@
   <div class="main-continer">
     
     <div
-      class="section-layout bg-color mist">
+      class="section-layout mist bg-color">
       <div class="section-layout-wrapper">
-        <div id="sidebarMeta" class="sidebar">
-    
+        
+
+<div class="sidebar">
+  
+    <div class="sidebar-box box-shadow-wrapper  right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body mist" id="sidebar_body">
+        
+          
+            <div class="post-side-meta" id="post_side_meta">
+              
 <div class="sidebar-wrapper box-shadow-wrapper ">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -224,170 +242,483 @@
 
 
 </div>
+            </div>
+            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
+              <div class="toc-box right-motion">
+  <div class="toc-wrapper auto-number auto"
+    id="toc_wrapper">
+    <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E4%B8%80-%E5%85%88%E6%9D%A5%E8%AF%B4%E4%B8%80%E4%B8%8Bclickhouse%E4%B8%BA%E5%95%A5%E5%BF%AB">一、先来说一下，ClickHouse为啥快</a></li>
+<li><a href="#%E4%BA%8C-%E5%88%9B%E5%BB%BA%E5%BA%93">二、创建库</a></li>
+<li><a href="#%E4%B8%89-%E5%88%9B%E5%BB%BA%E6%9C%AC%E5%9C%B0%E8%A1%A8">三、创建本地表</a></li>
+<li><a href="#%E5%9B%9B-%E5%88%9B%E5%BB%BA%E5%88%86%E5%B8%83%E5%BC%8F%E8%A1%A8">四、创建分布式表</a></li>
+<li><a href="#%E4%BA%94-ddl">五、DDL</a></li>
+<li><a href="#%E5%85%AD-deleteupdate-%E4%B8%8D%E6%94%AF%E6%8C%81distributed%E5%BC%95%E6%93%8E">六、delete/update 不支持Distributed引擎</a></li>
+<li><a href="#%E4%B8%83-%E5%88%86%E5%8C%BA%E8%A1%A8">七、分区表</a></li>
+<li><a href="#%E5%85%AB-%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5">八、数据同步</a></li>
+<li><a href="#%E4%B9%9D-%E6%97%B6%E9%97%B4%E6%88%B3%E8%BD%AC%E6%8D%A2">九、时间戳转换</a></li>
+<li><a href="#%E5%8D%81-%E5%85%B6%E4%BB%96%E4%BA%8B%E9%A1%B9">十、其他事项</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
 </div>
+
 <script>
-  let sidebarMeta = document.querySelector('#sidebarMeta');
-  let scheme = 'mist';
-  let sidebarWrapper = document.querySelector('.sidebar-wrapper');
-  if (sidebarMeta && (scheme === 'pisces' || scheme === 'gemini')) {
-    document.addEventListener('scroll', function(e) {
-      if (document.scrollingElement.scrollTop > parseInt(sidebarMeta.style.marginTop) + 10) {
-        sidebarWrapper.classList.add('home-sidebar-fixed')
-      } else {
-        sidebarWrapper.classList.remove('home-sidebar-fixed')
+
+  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
+  let active = 'active-show', activeClass = 'active-current';
+  let tocWrapper = document.querySelector('#toc_wrapper');
+  let tocContent = tocWrapper.children[0];
+  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
+
+  function addTocNumber(elem, deep) {
+    if (!elem) {
+      return;
+    }
+    let prop = elem.__proto__;
+
+    if (prop === HTMLUListElement.prototype) {
+      for (let i = 0; i < elem.children.length; i++) {
+        addTocNumber(elem.children[i], deep + (i + 1) + '.');
       }
+    } else if (prop === HTMLLIElement.prototype) {
+      // 保存li元素
+      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
+        lList.push(elem);
+      }
+      for (let i = 0; i < elem.children.length; i++) {
+        let cur = elem.children[i];
+        if (cur.__proto__ === HTMLAnchorElement.prototype) {
+          if (autoNumber) {
+            cur.text = deep + ' ' + cur.text;
+          }
+        } else if (cur.__proto__ === HTMLUListElement.prototype) {
+          addTocNumber(cur, deep);
+        }
+      }
+    }
+  }
+
+  function removeParentActiveClass() {
+    let parents = tocContent.querySelectorAll('.' + active)
+    parents.forEach(function (elem) {
+      elem.classList.remove(active);
     });
   }
-  </script>
-        <div class="section-box tag-line box-shadow-wrapper">
-          <section class="section tags-section posts-expand bg-color">
-            <div class="padding-wrapper">
-  <div class="tag-timeline-box">
-    <div class="tag-timeline-wrapper">
-      <div class="tag-timeline-title">
-        <h2>
-          docker
-          <small>标签</small>
-        </h2>
+
+  function addActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.add(activeClass);
+    }
+  }
+
+  function removeActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.remove(activeClass);
+    }
+  }
+
+  function addActiveLiElemment(elem, parent) {
+    if (!elem || elem === parent) {
+      return;
+    } else {
+      if (elem.__proto__ === HTMLLIElement.prototype) {
+        elem.classList.add(active);
+      }
+      addActiveLiElemment(elem.parentElement, parent);
+    }
+  }
+
+  function showToc() {
+    if (tocWrapper) {
+      postBody = document.querySelector('#post_body');
+      for (let i = 0; i < postBody.children.length; i++) {
+        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
+          hList.push(postBody.children[i]);
+        }
+      }
+      if (tocWrapper.classList.contains('compress')) {
+        tocContent.classList.add('closed');
+      } else if (tocWrapper.classList.contains('no_compress')) {
+        tocContent.classList.add('expanded');
+      } else {
+        if (hList.length > 10) {
+          active = 'active-hidden'
+          tocContent.classList.add('closed');
+        } else {
+          tocContent.classList.add('expanded');
+        }
+      }
+    }
+  }
+
+  (function () {
+    // 处理不是从#一级标题开始目录
+    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
+      let con = tocContent.children[0].children[0];
+      tocContent.innerHTML = con.innerHTML;
+    }
+    let markdownItTOC = document.querySelector('.markdownIt-TOC');
+    let innerHeight = window.innerHeight;
+    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
+    addTocNumber(tocContent, '');
+  })();
+
+  document.addEventListener('scroll', function (e) {
+    if (lList.length <= 0) {
+      return;
+    }
+    let scrollTop = document.scrollingElement.scrollTop + 10;
+    let dir;
+
+    if (lastTop - scrollTop > 0) {
+      dir = 'up';
+    } else {
+      dir = 'down';
+    }
+
+    lastTop = scrollTop;
+    if (scrollTop <= 0) {
+      if (lastIndex >= 0 && lastIndex < hList.length) {
+        lList[lastIndex].classList.remove(activeClass);
+      }
+      return;
+    }
+
+    let current = 0, hasFind = false;
+    for (let i = 0; i < hList.length; i++) {
+      if (hList[i].offsetTop > scrollTop) {
+        current = i;
+        hasFind = true;
+        break;
+      }
+    }
+    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
+      current = hList.length - 1;
+    } else {
+      current--;
+    }
+    if (dir === 'down') {
+      if (current > lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex)
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    } else {
+      if (current < lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex);
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    }
+  });
+
+
+  window.addEventListener('load', function () {
+    showToc();
+    document.querySelector('#sidebar').style = 'display: block;';
+    tocWrapper.classList.add('toc-active');
+    setTimeout(function () {
+      if ("createEvent" in document) {
+        let evt = document.createEvent("HTMLEvents");
+        evt.initEvent("scroll", false, true);
+        document.dispatchEvent(evt);
+      }
+      else {
+        document.fireEvent("scroll");
+      }
+    }, 500)
+  })
+
+</script>
+            </div>
+          
+        
       </div>
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      <a href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">
-        <div class="motion-warpper">
-          <div class="tag-post-node">
-            <h1>
-              06-17
-              <small>docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS</small>
-            </h1>
-          </div>
-        </div>
-      </a>
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+    </div>
+  
+</div>
+<script>
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
+      }
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
+  }
+
+  postToc && postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+  if (sidebarBody) {
+    if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+      let hasFix = false;
+      let scrollEl = document.querySelector('.main-continer');
+      let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+      window.addEventListener('scroll', function(e) {
+        if (document.scrollingElement.scrollTop >= limitTop) {
+          if (!hasFix) {
+            sidebar.classList.add('sidebar-fixed');
+            hasFix = true;
+          }
+        } else {
+          if (hasFix) {
+            sidebar.classList.remove('sidebar-fixed');
+            hasFix = false;
+          }
+        }
+      });
+    }
+  }
+  
+</script>
+        <div class="section-box box-shadow-wrapper">
+          <div class="section bg-color post post-page">
+            <header class="post-header">
+  <h1 class="post-title">
+    <a class="post-title-link" href="http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/">
+      clickhouse基本操作
+    </a>
+  </h1>
+  <div class="post-meta">
+    
+    <span class="meta-item pc-show">
+      <i class="fa fa-calendar-o"></i>
+      <span>发布于</span>
+      <span>2020-10-27</span>
+      <span class="post-meta-divider pc-show">|</span>
+    </span>
+    
+    <span class="meta-item">
+      <i class="fa fa-clock-o"></i>
+      <span>5分钟</span>
+    </span>
+    <span class="meta-item">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-file-word-o"></i>
+      <span>1045<span class="pc-show">字数</span></span>
+    </span>
+    
+    
+    
+    <span id="/post/clickhouse-ji-ben-cao-zuo/" data-flag-title="clickhouse基本操作" class="meta-item pc-show leancloud_visitors">
+      <span class="post-meta-divider">|</span>
+      <i class="fa fa-eye"></i>
+      <span>浏览量：<span class="leancloud-visitors-count"></span></span>
+    </span>
+    
+  </div>
+</header>
+            <div class="post-body next-md-body" id="post_body">
+              <h2 id="一-先来说一下clickhouse为啥快">一、先来说一下，ClickHouse为啥快</h2>
+<pre><code>ClickHouse有多少CPU，吃多少资源，所以飞快；
+ClickHouse不支持事务，不存在隔离级别。这里要额外说一下，有人觉得，你一个数据库都不支持事务，不支持ACID还玩个毛。ClickHouse的定位是分析性数据库，而不是严格的关系型数据库。又有人要问了，数据都不一致，统计个毛。举个例子，汽车的油表是100%准确么？为了获得一个100%准确的值，难道每次测量你都要停车检查么？统计数据的意义在于用大量的数据看规律，看趋势，而不是100%准确。
+IO方面，MySQL是行存储，ClickHouse是列存储，后者在count()这类操作天然有优势，同时，在IO方面，MySQL需要大量随机IO，ClickHouse基本是顺序IO。
+有人可能觉得上面的数据导入的时候，数据肯定缓存在内存里了，这个的确，但是ClickHouse基本上是顺序IO，用过就知道了，对IO基本没有太高要求，当然，磁盘越快，上层处理越快，但是99%的情况是，CPU先跑满了（数据库里太少见了，大多数都是IO不够用）
+</code></pre>
+<h2 id="二-创建库">二、创建库</h2>
+<p>CREATE/ATTACH DATABASE zabbix ENGINE = Ordinary;<br>
+ATTACH 也可以建库，但是metadata目录下不会生成.sql文件，一般用于metadata元数据sql文件被删除后，恢复库表结构使用</p>
+<h2 id="三-创建本地表">三、创建本地表</h2>
+<p>CREATE TABLE test02( id UInt16,col1 String,col2 String,create_date date ) ENGINE = MergeTree(create_date, (id), 8192);<br>
+ENGINE：是表的引擎类型，<br>
+MergeTree：最常用的，MergeTree要求有一个日期字段，还有主键。<br>
+Log引擎没有这个限制，也是比较常用。<br>
+ReplicatedMergeTree：MergeTree的分支，表复制引擎。<br>
+Distributed：分布式引擎。<br>
+create_date：是表的日期字段，一个表必须要有一个日期字段。<br>
+id：是表的主键，主键可以有多个字段，每个字段用逗号分隔。<br>
+8192：是索引粒度，用默认值8192即可。</p>
+<h2 id="四-创建分布式表">四、创建分布式表</h2>
+<p>CREATE TABLE distributed_table AS table ENGINE = Distributed(cluster, db, table, rand());<br>
+cluster：配置文件中的群集名称。<br>
+db：库名。<br>
+table：本地表名。<br>
+rand()：分片方式：随机。<br>
+intHash64():分片方式：指定字段做hash。<br>
+Distribute引擎会选择每个分发到的Shard中的”健康的”副本执行SQL<br>
+<img src="http://lvelvis.github.io/post-images/1603771933311.jpg" alt="" loading="lazy"></p>
+<h2 id="五-ddl">五、DDL</h2>
+<p>如果想按集群操作，需要借助zookeeper，在config.xml中添加配置<br>
+&lt;distributed_ddl&gt;<br>
+<path>/clickhouse/task_queue/ddl</path><br>
+&lt;/distributed_ddl&gt;<br>
+一个节点创建表，会同步到各个节点<br>
+CREATE TABLE db.table [ON CLUSTER cluster] (...)<br>
+添加、删除、修改列<br>
+ALTER TABLE [db].table [ON CLUSTER cluster] ADD|DROP|MODIFY COLUMN ...<br>
+rename 支持*MergeTree和Distributed<br>
+rename table db.table1 to db.table2 [ON CLUSTER cluster]<br>
+truncate table db.table;不支持Distributed引擎</p>
+<h2 id="六-deleteupdate-不支持distributed引擎">六、delete/update 不支持Distributed引擎</h2>
+<p>ALTER TABLE [db.]table DELETE WHERE filter_expr...<br>
+ALTER TABLE [db.]table UPDATE column1 = expr1 [, ...] WHERE ...</p>
+<h2 id="七-分区表">七、分区表</h2>
+<p>按时间分区：<br>
+toYYYYMM(EventDate)：按月分区<br>
+toMonday(EventDate)：按周分区<br>
+toDate(EventDate)：按天分区<br>
+按指定列分区：<br>
+PARTITION BY cloumn_name<br>
+对分区的操作：<br>
+alter table test1 DROP PARTITION [partition] #删除分区<br>
+alter table test1 DETACH PARTITION [partition]#下线分区<br>
+alter table test1 ATTACH PARTITION [partition]#恢复分区<br>
+alter table .test1 FREEZE PARTITION [partition]#备份分区</p>
+<h2 id="八-数据同步">八、数据同步</h2>
+<ol>
+<li>采用remote函数<br>
+insert into db.table select * from remote('目标IP',db.table,'user','passwd')</li>
+<li>csv文件导入clickhouse<br>
+cat test.csv | clickhouse-client -u user --password password --query=&quot;INSERT INTO db.table FORMAT CSV&quot;</li>
+<li>同步mysql库中表<br>
+CREATE TABLE tmp ENGINE = MergeTree ORDER BY id AS SELECT * FROM mysql('hostip:3306', 'db', 'table', 'user', 'passwd') ;<br>
+4） clickhouse-copier 工具</li>
+</ol>
+<h2 id="九-时间戳转换">九、时间戳转换</h2>
+<p>select toUnixTimestamp('2018-11-25 00:00:02');<br>
+select toDateTime(1543075202);</p>
+<h2 id="十-其他事项">十、其他事项</h2>
+<ol>
+<li>clickhouse的cluster环境中，每台server的地位是等价的，即不存在master-slave之说，是multi-master模式。</li>
+<li>各replicated表的宿主server上要在hosts里配置其他replicated表宿主server的ip和hostname的映射。</li>
+<li>上面描述的在不同的server上建立全新的replicated模式的表，如果在某台server上已经存在一张replicated表，并且表中已经有数据，这时在另外的server上执行完replicated建表语句后，已有数据会自动同步到其他server上面。</li>
+<li>如果zookeeper挂掉，replicated表会切换成read-only模式，不再进行数据同步，系统会周期性的尝试与zk重新建立连接。</li>
+</ol>
+
+            </div>
+            <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong>本文作者：</strong>
+      lvelvis
+    </li>
+    <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/" title="clickhouse基本操作">http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong>版权声明： </strong>
+      本博客所有文章除特别声明外，均采用<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i> BY-NC-SA</a> 许可协议。转载请注明出处！
+    </li>
+  </ul>
+  <div class="tags">
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
+      
+    </div>
+    <div class="nav-next">
+      
+        <a class="nav-pc-next" title="kafka消费命令" href="http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/">kafka消费命令</a>
+        <a class="nav-mobile-next" title="kafka消费命令" href="http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/">下一篇</a>
+        <i class="fa fa-chevron-right"></i>
       
     </div>
   </div>
 </div>
-          </section>
+            
+  <script src="https://cdn.jsdelivr.net/npm/valine@1.4.4/dist/Valine.min.js"></script>
+<div id="vcomments" style="padding: 10px 0px 0px 0px"></div>
+
+<style>
+  .v .veditor {
+    min-height: 10rem;
+    background-image: url('https://upimage.alexhchu.com/2020/04/21/47eda59424daa.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: right;
+    background-color: rgba(255, 255, 255, 0);
+    resize: none;
+  }
+
+  .v .vwrap {
+    border: 1px solid #000 !important;
+  }
+
+  .v .vbtn {
+    padding: .4rem 1.2rem !important;
+    border-color: #fff !important;
+    background-color: #49b1f5 !important;
+    color: #fff !important;
+    font-size: .7rem !important;
+  }
+
+  .v .vcards .vcard .vh .vmeta .vat {
+    padding: 0 .8rem !important;
+    border: 1px solid #00c4b6 !important;
+    border-radius: 5px !important;
+    color: #00c4b6 !important;
+  }
+</style>
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'q6RNtDXsSlHgt7Wml6Krh1My-gzGzoHsz',
+    appKey: 'XVXX46bo5q1RnjaGrExJEXOm',
+    avatar: 'identicon',
+    placeholder: '',
+    pageSize: '10',
+    lang: 'zh-cn',
+    visitor: 'true' === 'true',
+    highlight: 'true' === 'true',
+    avatarForce: 'true' === 'true',
+  });
+</script>
+
+          </div>
         </div>
       </div>
     </div>
@@ -1116,6 +1447,36 @@ Yellow;"><b><?php echo $conf['xbmz']?></b></font></h2></marquee>
   // 代码高亮
   hljs.initHighlightingOnLoad();
 
+</script>
+    <div class="light-box" id="light_box"></div>
+<script>
+  let imgs = document.querySelectorAll('.post-body img');
+  let lightBox = document.querySelector('#light_box');
+  lightBox.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+  })
+  lightBox.addEventListener('mousewheel', (e) => {
+    e.preventDefault()
+  })
+  let width = window.innerWidth * 0.8;
+  lightBox.onclick = () => {
+    let img = lightBox.querySelector('img');
+    lightBox.style = '';
+    img && img.remove();
+  }
+  imgs.forEach(item => {
+    item.onclick = function (e) {
+      let lightImg = document.createElement('img');
+      lightImg.src = this.src;
+      lightBox.style = `height: 100%; opacity: 1; background-color: rgba(0, 0, 0, 0.5);cursor: zoom-out;`;
+      lightImg.style = `width: ${width}px; border: 1px solid #fff; border-radius: 2px;`;
+      lightImg.onclick = function () {
+        lightBox.style = '';
+        this.remove();
+      }
+      lightBox.append(lightImg);
+    }
+  })
 </script>
   </div>
 </body>
@@ -3924,6 +4285,5 @@ kubectl apply -f cluster.yaml&lt;br&gt;
 
 
 <script src=" /media/js/cool.js"></script>
-
 
 </html>
