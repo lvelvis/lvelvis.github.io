@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-10-27T04:18:28.348Z</updated>
+    <updated>2020-10-28T03:35:13.879Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -11,12 +11,67 @@
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
     <entry>
+        <title type="html"><![CDATA[kafka数据导入到Clickhouse]]></title>
+        <id>http://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/</id>
+        <link href="http://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/">
+        </link>
+        <updated>2020-10-28T03:26:38.000Z</updated>
+        <content type="html"><![CDATA[<pre><code>Kafka 是目前应用非常广泛的开源消息中间件，一个常用的的场景就是做数据总线收集各个服务的消息日志，下游各种数据服务订阅消费数据，生成各种报表或数据应用等。Clickhouse 的自带了 Kafka Engine，使得 Clickhouse 和 Kafka 的集成变得非常容易。
+</code></pre>
+<h2 id="创建-kafka-表">创建 Kafka 表</h2>
+<p>Clickhouse 的 Kafka Engine 可以将 Kafka 中的流映射成一个表，方便我们的后续处理。只要建表的时候制定</p>
+<pre><code>Kafka(broker_list, topic_list, group_name, format[, schema])
+broker_list: 逗号分隔的 Kafka broker 列表
+topic_list: 消费的topic
+group_name: consumer group 的id， 同一个 group_name 的 clickhouse 会在同一个 consumer group 消费数据
+format: kafka 消息的格式
+</code></pre>
+<p>在前文的所述的3节点 clickhouse 集群上，在每一个节点都建一个 Kafka Engine 的表从 kafka 的events topic读数据。</p>
+<pre><code>CREATE TABLE event_stream (ts UInt64, tag String, cnt Int64, val Double) 
+ENGINE = Kafka('127.0.0.1:9092', 'events', 'group1', 'JSONEachRow');
+</code></pre>
+<h2 id="写入数据">写入数据</h2>
+<p>现在我们试着往 kafka 写一点json数据</p>
+<pre><code>bin/kafka-console-producer.sh --broker-list 127.0.0.1:9092 --topic events
+&gt;{&quot;ts&quot;:1515897449,&quot;tag&quot;:&quot;aa&quot;,&quot;cnt&quot;:3,&quot;val&quot;:0.7}
+&gt;{&quot;ts&quot;:1515897450,&quot;tag&quot;:&quot;bb&quot;,&quot;cnt&quot;:9,&quot;val&quot;:0.28}
+&gt;{&quot;ts&quot;:1515897451,&quot;tag&quot;:&quot;cc&quot;,&quot;cnt&quot;:7,&quot;val&quot;:0.93}
+&gt;{&quot;ts&quot;:1515897452,&quot;tag&quot;:&quot;dd&quot;,&quot;cnt&quot;:1,&quot;val&quot;:0.78}
+</code></pre>
+<p>然后在每个 clickhose 节点中查看数据。</p>
+<pre><code>┌─────────ts─┬─tag─┬─cnt─┬────────────────val─┐
+│ 1515897449 │ aa  │   3 │ 0.7000000000000001 │
+└────────────┴─────┴─────┴────────────────────┘
+┌─────────ts─┬─tag─┬─cnt─┬──val─┐
+│ 1515897452 │ dd  │   1 │ 0.78 │
+└────────────┴─────┴─────┴──────┘
+</code></pre>
+<p>注意的是由于一个kafka的partition 只能由一个 group consumer 消费，所以clickhouse 节点数需要大于 topic 的 partition 数。</p>
+<p>由于 Kafka 表只是 kafka 流的一个视图而已，当数据被 select 了一次之后，这个数据就会被认为已经消费了，下次 select 就不会再出现。所以Kafka表单独使用是没什么用的，一般是用来和 MaterialView 配合，将Kafka表里面的数据自动导入到 MaterialView 里面。</p>
+<h2 id="与-materialview-集成">与 MaterialView 集成</h2>
+<p>我们现在每一节点建一个 MaterialView 保存 Kafka 里面的数据, 再顺手建一个全局的Distributed表。</p>
+<pre><code>CREATE MATERIALIZED VIEW events ENGINE = MergeTree(day, (day,ts, tag, cnt, val), 8192) AS
+SELECT toDate(toDateTime(ts)) AS day, ts, tag, cnt, val FROM event_stream;
+
+CREATE TABLE events_all AS events
+ENGINE = Distributed(perftest_3shards_1replicas, default, events, rand());
+</code></pre>
+<p>再往Kafka里面写些数据，就能在各个节点的 events 或 events_all 里面查出来了。</p>
+<h2 id="总结">总结</h2>
+<p>clichouse 和 Kafka的配合可以说是十分的便利，只有配置好，clickhouse 从 kafka 读数据和写入都是如此的方便。不过还是有相当的局限性，因为目前对 kafka 数据格式的支持还是有限。如果能通过插件之类的扩展方式自定义format就好了。另外，clickhouse 是否保证数据的一致性，如何去重？如何保证数据不丢失？也可以通过与flink结合，从而保证数据的一致性。详细的情况还需要进一步测试</p>
+<h2 id="参考资料">参考资料</h2>
+<p>https://clickhouse.yandex/tutorial.html<br>
+https://clickhouse.yandex/docs/en/table_engines/kafka.html</p>
+]]></content>
+    </entry>
+    <entry>
         <title type="html"><![CDATA[clickhouse基本操作]]></title>
         <id>http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/</id>
         <link href="http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/">
         </link>
         <updated>2020-10-27T04:09:31.000Z</updated>
         <content type="html"><![CDATA[<h2 id="一-先来说一下clickhouse为啥快">一、先来说一下，ClickHouse为啥快</h2>
+<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1603856102146.gif" alt="" loading="lazy"></figure>
 <pre><code>ClickHouse有多少CPU，吃多少资源，所以飞快；
 ClickHouse不支持事务，不存在隔离级别。这里要额外说一下，有人觉得，你一个数据库都不支持事务，不支持ACID还玩个毛。ClickHouse的定位是分析性数据库，而不是严格的关系型数据库。又有人要问了，数据都不一致，统计个毛。举个例子，汽车的油表是100%准确么？为了获得一个100%准确的值，难道每次测量你都要停车检查么？统计数据的意义在于用大量的数据看规律，看趋势，而不是100%准确。
 IO方面，MySQL是行存储，ClickHouse是列存储，后者在count()这类操作天然有优势，同时，在IO方面，MySQL需要大量随机IO，ClickHouse基本是顺序IO。
@@ -877,49 +932,6 @@ Private  +   Shared  =  RAM used    Program
 <p>最佳答案</p>
 <pre><code>有一件事我没看到您检查这里是内核内存。这在memory.usage_in_bytes图中也有说明，但在memory.stat中没有出现。您可以通过查看/sys/fs/cgroup/memory/memory.kmem.usage_in_bytes找到它。
 有一次，我看到我们的一个.NET核心应用程序也发生了类似的事情，但我不知道到底发生了什么（可能是.NET核心内存泄漏，因为它是我们的应用程序无法控制的非托管内存）。这将取决于您的应用程序使用是否正常，但就cgroups而言，我相信内核内存使用在默认情况下是不受约束的。
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[golang笔记-go mod与go vendor]]></title>
-        <id>http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/</id>
-        <link href="http://lvelvis.github.io/post/golang-bi-ji-go-mod-yu-go-vendor/">
-        </link>
-        <updated>2020-06-10T08:40:20.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="go-mod-使用">go mod 使用</h1>
-<p>解决的问题是golang不再依赖gopath的设置，下载下来的包可以直接使用。<br>
-go mod init ./<br>
-go build main.go 或 go build -mod=vendor main.go<br>
-go mod vendor #将包打到vendor文件夹下</p>
-<h1 id="go-vendor">go vendor</h1>
-<p>管理Golang项目依赖，应该是一个第三方的，但是比较好用。</p>
-<p>安装<br>
-go get -u github.com/kardianos/govendor</p>
-<p>使用一套连招：</p>
-<pre><code>govendor init # 创建vendor目录，创建vendor.json文件  
-govendor add +external #生成依赖包  
-govendor update +vendor # 更新vendor的包命令  
-状态	缩写状态	含义
-+local	l	本地包，即项目自身的包组织
-+external	e	外部包，即被 $GOPATH 管理，但不在 vendor 目录下
-+vendor	v	已被 govendor 管理，即在 vendor 目录下
-+std	s	标准库中的包
-+unused	u	未使用的包，即包在 vendor 目录下，但项目并没有用到
-+missing	m	代码引用了依赖包，但该包并没有找到
-+program	p	主程序包，意味着可以编译为执行文件
-+outside	 	外部包和缺失的包
-+all	 	所有的包
-命令	功能
-init	初始化 vendor 目录
-list	列出所有的依赖包
-add	添加包到 vendor 目录，如 govendor add +external 添加所有外部包
-add PKG_PATH	添加指定的依赖包到 vendor 目录
-update	从 $GOPATH 更新依赖包到 vendor 目录
-remove	从 vendor 管理中删除依赖
-status	列出所有缺失、过期和修改过的包
-fetch	添加或更新包到本地 vendor 目录
-sync	本地存在 vendor.json 时候拉去依赖包，匹配所记录的版本
-get	类似 go get 目录，拉取依赖包到 vendor 目录
 </code></pre>
 ]]></content>
     </entry>
