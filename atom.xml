@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-10-28T08:38:09.710Z</updated>
+    <updated>2020-10-28T08:41:40.451Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -97,7 +97,7 @@
 <pre><code>clickhouse-server --version
 ClickHouse server version 20.3.8.53.
 </code></pre>
-<p>使用2shards_2replicas</p>
+<p>使用4个节点+3zk 2shards_2replicas</p>
 <h2 id="配置方式">配置方式</h2>
 <h3 id="官方promtheus部署方式promtheusyml增加以下参数">官方promtheus部署方式，promtheus.yml增加以下参数</h3>
 <pre><code>remote_write:
