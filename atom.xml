@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-10-28T03:35:13.879Z</updated>
+    <updated>2020-10-28T08:29:05.841Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,158 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[prometheus监控数据远程存储clickhouse集群]]></title>
+        <id>http://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/</id>
+        <link href="http://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/">
+        </link>
+        <updated>2020-10-28T07:36:32.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="前提">前提</h2>
+<pre><code>Prometheus的本地存储设计可以减少其自身运维和管理的复杂度，同时能够满足大部分用户监控规模的需求。但是本地存储也意味着Prometheus无法持久化数据，无法存储大量历史数据(TSDB存储大量数据，会导致程序启动加载占用过多内存)，同时也无法灵活扩展和迁移。
+为了保持Prometheus的简单性，Prometheus并没有尝试在自身中解决以上问题，而是通过定义两个标准接口(remote_write/remote_read)，让用户可以基于这两个接口对接将数据保存到任意第三方的存储服务中，这种方式在Promthues中称为Remote Storage。
+</code></pre>
+<p>目前Prometheus社区也提供了部分对于第三方数据库的Remote Storage支持：</p>
+<table>
+<thead>
+<tr>
+<th>存储服务</th>
+<th>支持模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AppOptics</td>
+<td><code>write</code></td>
+</tr>
+<tr>
+<td>Chronix</td>
+<td><code>write</code></td>
+</tr>
+<tr>
+<td>Cortex</td>
+<td><code>read/write</code></td>
+</tr>
+<tr>
+<td>CrateDB</td>
+<td><code>read/write</code></td>
+</tr>
+<tr>
+<td>Gnocchi</td>
+<td><code>write</code></td>
+</tr>
+<tr>
+<td>Graphite</td>
+<td><code>write</code></td>
+</tr>
+<tr>
+<td>InfluxDB</td>
+<td><code>read/write</code></td>
+</tr>
+<tr>
+<td>OpenTSDB</td>
+<td><code>write</code></td>
+</tr>
+<tr>
+<td>PostgreSQL/TimescaleDB</td>
+<td><code>read/write</code></td>
+</tr>
+<tr>
+<td>SignalFx</td>
+<td><code>write</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="remote-write">Remote Write</h2>
+<p><img src="http://lvelvis.github.io/post-images/1603871818190.png" alt="" loading="lazy"><br>
+用户可以在Prometheus配置文件中指定Remote Write(远程写)的URL地址，一旦设置了该配置项，Prometheus将采集到的样本数据通过HTTP的形式发送给适配器(Adaptor)。而用户则可以在适配器中对接外部任意的服务。外部服务可以是真正的存储系统，公有云的存储服务，也可以是消息队列等任意形式。</p>
+<ul>
+<li>可同时启用配置TSDB存储1一天数据，其他数据使用远程存储；查询近1天数据，从tsdb获取，其他数据从远程存储获取</li>
+</ul>
+<h2 id="remote-read">Remote Read</h2>
+<p><img src="http://lvelvis.github.io/post-images/1603872148839.png" alt="" loading="lazy"><br>
+如下图所示，Promthues的Remote Read(远程读)也通过了一个适配器实现。在远程读的流程当中，当用户发起查询请求后，Promthues将向remote_read中配置的URL发起查询请求(matchers,ranges)，Adaptor根据请求条件从第三方存储服务中获取响应的数据。同时将数据转换为Promthues的原始样本数据返回给Prometheus Server。</p>
+<p>当获取到样本数据后，Promthues在本地使用PromQL对样本数据进行二次处理。</p>
+<h2 id="prom2click适配器">prom2click适配器</h2>
+<pre><code>git clone https://github.com/lvelvis/prom2click.git
+</code></pre>
+<p>修改部分代码，prometheus-operator已测试，可正常获取数据</p>
+<h3 id="prom2click流程图">prom2click流程图</h3>
+<p><img src="http://lvelvis.github.io/post-images/1603872379113.png" alt="" loading="lazy"><br>
+*prom2click与clickhouse的连接使用的长链接；因此需要多配置几个prom2click服务(默认使用配置-ch.dsn第一个clickhoue节点)，均衡clickhouse查询压力。</p>
+<h2 id="配置方式">配置方式</h2>
+<h3 id="官方promtheus部署方式promtheusyml增加以下参数">官方promtheus部署方式，promtheus.yml增加以下参数</h3>
+<pre><code>remote_write:
+    - url: &quot;http://localhost:9201/write&quot;
+remote_read:
+    - url: &quot;http://localhost:9202/read&quot;
+    - url: &quot;http://localhost:9203/read&quot;
+</code></pre>
+<h3 id="promtheus-operatorkube-prometheus-manifests">promtheus-operator(kube-prometheus-manifests)</h3>
+<p>prometheus/prometheus-prometheus.yaml</p>
+<pre><code>apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  labels:
+    prometheus: k8s
+  name: k8s
+  namespace: monitoring
+spec:
+  retention: 1d
+  remoteWrite: 
+    - url: &quot;http://192.168.101.240:9201/write&quot;
+  remoteRead: 
+    - url: &quot;http://192.168.101.241:9201/read&quot;
+    - url: &quot;http://192.168.101.242:9201/read&quot;
+    - url: &quot;http://192.168.101.243:9201/read&quot;
+  alerting:
+    alertmanagers:
+    - name: alertmanager-main
+      namespace: monitoring
+      port: web
+  image: lvcisco/prometheus:v2.15.2
+  nodeSelector:
+    kubernetes.io/os: linux
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector: {}
+  replicas: 2
+  resources:
+    requests:
+      cpu: &quot;2&quot;
+      memory: 1Gi
+    limits:
+      cpu: &quot;4&quot;
+      #memory: 8Gi
+  ruleSelector:
+    matchLabels:
+      prometheus: k8s
+      role: alert-rules
+  securityContext:
+    fsGroup: 2000
+</code></pre>
+<pre><code>kubectl replace -f  prometheus/prometheus-prometheus.yaml 
+</code></pre>
+<p>然后查看promtheus容器配置是否生效</p>
+<pre><code>kubectl  -n monitoring exec  prometheus-k8s-0 tail  /etc/prometheus/config_out/prometheus.env.yaml
+
+remote_write:
+- url: http://192.168.101.240:9201/write
+  remote_timeout: 30s
+remote_read:
+- url: http://192.168.101.241:9201/read
+  remote_timeout: 30s
+- url: http://192.168.101.242:9201/read
+  remote_timeout: 30s
+- url: http://192.168.101.243:9201/read
+  remote_timeout: 30s
+</code></pre>
+<ul>
+<li>更多参数配置查看<a href="https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#remotereadspec">远程存储配置</a></li>
+<li><a href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write">其他配置</a></li>
+</ul>
+<h2 id="测试">测试</h2>
+<p>可删除tsdb数据，需重启prometheus-k8s容器，再次查询grafana是否有历史数据</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[kafka数据导入到Clickhouse]]></title>
         <id>http://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/</id>
@@ -774,164 +926,6 @@ do
    echo &quot;${IP}节点已剔除!&quot;
 done
 echo &quot;${IP_LIST}完成剔除&quot;
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[docker - 内存使用率差异:cgroup memory.usage_in_bytes与docker容器内的RSS]]></title>
-        <id>http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/</id>
-        <link href="http://lvelvis.github.io/post/docker-nei-cun-shi-yong-lu-chai-yi-cgroup-memoryusage_in_bytes-yu-docker-rong-qi-nei-de-rss/">
-        </link>
-        <updated>2020-06-17T03:46:43.000Z</updated>
-        <content type="html"><![CDATA[<p>&quot;kubernetes&quot;（v1.10.2）表示我的pod（包含一个容器）使用了大约5GB的内存。在容器内部，RSS说的更像681Mib。任何人都能用以下数据解释如何从681Mib到5GB吗（或者用我省略的另一个命令来描述如何弥补差异，无论是从容器还是从在Kubernetes中运行此容器的Docker主机）？<br>
-Kubectl Top Pods表示5GB：</p>
-<pre><code>% kubectl top pods -l app=myapp
-NAME                             CPU(cores)   MEMORY(bytes)
-myapp-56b947bf6d-2lcr7           39m          5039Mi
-</code></pre>
-<p>Cadvisor报告了类似的数字（可能来自稍有不同的时间，因此请忽略细微的差异）：</p>
-<pre><code>container_memory_usage_bytes{pod_name=~&quot;.*myapp.*&quot;}      5309456384
-
-5309456384 / 1024.0 / 1024 ~= 5063 ~= 5039
-</code></pre>
-<p>在容器中，此文件似乎是cadvisor获取其数据的位置：</p>
-<pre><code># kubectl exec -it myapp-56b947bf6d-2lcr7 bash
-meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.usage_in_bytes
-5309456384
-容器中的常驻集大小（RSS）不匹配（小于1GB）：
-meme@myapp-56b947bf6d-2lcr7:/app# kb=$(ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk | grep -v RSS | awk '{print $6}' | awk '{s+=$1} END {printf &quot;%.0f&quot;, s}'); mb=$(expr $kb / 1024); printf &quot;Kb: $kb\nMb: $mb\n&quot;
-Kb: 698076
-Mb: 681
-</code></pre>
-<pre><code>完整的PS AUX，以防有帮助：
-meme@myapp-56b947bf6d-2lcr7:/app# ps aux | grep -v grep | grep -v 'ps aux' | grep -v bash | grep -v awk
-USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-meme         1  0.0  0.0 151840 10984 ?        Ss   Jun04   0:29 /usr/sbin/apache2 -D FOREGROUND
-www-data    10  0.0  0.0 147340  4652 ?        S    Jun04   0:00 /usr/sbin/apache2 -D FOREGROUND
-www-data    11  0.0  0.0 148556  4392 ?        S    Jun04   0:16 /usr/sbin/apache2 -D FOREGROUND
-www-data    12  0.2  0.0 2080632 11348 ?       Sl   Jun04  31:58 /usr/sbin/apache2 -D FOREGROUND
-www-data    13  0.1  0.0 2080384 10980 ?       Sl   Jun04  18:12 /usr/sbin/apache2 -D FOREGROUND
-www-data    68  0.3  0.0 349048 94272 ?        Sl   Jun04  47:09 hotapp
-www-data   176  0.2  0.0 349624 92888 ?        Sl   Jun04  43:11 hotapp
-www-data   179  0.2  0.0 349196 94456 ?        Sl   Jun04  42:20 hotapp
-www-data   180  0.3  0.0 349828 95112 ?        Sl   Jun04  44:14 hotapp
-www-data   185  0.3  0.0 346644 91948 ?        Sl   Jun04  43:49 hotapp
-www-data   186  0.3  0.0 346208 91568 ?        Sl   Jun04  44:27 hotapp
-www-data   189  0.2  0.0 350208 95476 ?        Sl   Jun04  41:47 hotapp
-</code></pre>
-<p>Docker容器统计API中的内存部分：</p>
-<pre><code>curl --unix-socket /var/run/docker.sock 'http:/v1.24/containers/a45fc651e7b12f527b677e6a46e2902786bee6620484922016a135e317a42b4e/stats?stream=false' | jq . # yields:
-
-&quot;memory_stats&quot;: {
-  &quot;usage&quot;: 5327712256,
-  &quot;max_usage&quot;: 5368344576,
-  &quot;stats&quot;: {
-    &quot;active_anon&quot;: 609095680,
-    &quot;active_file&quot;: 74457088,
-    &quot;cache&quot;: 109944832,
-    &quot;dirty&quot;: 28672,
-    &quot;hierarchical_memory_limit&quot;: 5368709120,
-    &quot;inactive_anon&quot;: 1687552,
-    &quot;inactive_file&quot;: 29974528,
-    &quot;mapped_file&quot;: 1675264,
-    &quot;pgfault&quot;: 295316278,
-    &quot;pgmajfault&quot;: 77,
-    &quot;pgpgin&quot;: 85138921,
-    &quot;pgpgout&quot;: 84964308,
-    &quot;rss&quot;: 605270016,
-    &quot;rss_huge&quot;: 0,
-    &quot;shmem&quot;: 5513216,
-    &quot;total_active_anon&quot;: 609095680,
-    &quot;total_active_file&quot;: 74457088,
-    &quot;total_cache&quot;: 109944832,
-    &quot;total_dirty&quot;: 28672,
-    &quot;total_inactive_anon&quot;: 1687552,
-    &quot;total_inactive_file&quot;: 29974528,
-    &quot;total_mapped_file&quot;: 1675264,
-    &quot;total_pgfault&quot;: 295316278,
-    &quot;total_pgmajfault&quot;: 77,
-    &quot;total_pgpgin&quot;: 85138921,
-    &quot;total_pgpgout&quot;: 84964308,
-    &quot;total_rss&quot;: 605270016,
-    &quot;total_rss_huge&quot;: 0,
-    &quot;total_shmem&quot;: 5513216,
-    &quot;total_unevictable&quot;: 0,
-    &quot;total_writeback&quot;: 0,
-    &quot;unevictable&quot;: 0,
-    &quot;writeback&quot;: 0
-  },
-  &quot;limit&quot;: 5368709120
-},
-</code></pre>
-<p>对断言的注释：<br>
-总计（memory.usage_in_bytes）=rss+缓存<br>
-说：<br>
-用法\u字节：为了提高效率，与其他内核组件一样，内存组使用一些优化<br>
-避免不必要的缓存线错误共享。使用率受<br>
-方法，不显示内存（和交换）使用的“精确”值，这是一个模糊的<br>
-有效访问的值。（当然，必要时，它是同步的。）<br>
-如果您想知道更精确的内存使用情况，应该使用rss+cache（+swap）<br>
-内存中的值。stat（见5.2）。<br>
-说：<br>
-注意：在Linux上，Docker CLI通过从总内存使用量中减去页面缓存使用量来报告内存使用情况。API不执行这样的计算，而是提供总内存使用量和页面缓存的数量，以便客户机可以根据需要使用数据。<br>
-实际上，容器中/sys/fs/cgroup/memory/memory.stat中的大多数内容都出现在上面的docker stats api响应中（与在不同时间采集样本略有不同，抱歉）：</p>
-<pre><code>meme@myapp-56b947bf6d-2lcr7:/app# cat /sys/fs/cgroup/memory/memory.stat
-cache 119492608
-rss 607436800
-rss_huge 0
-shmem 5525504
-mapped_file 1675264
-dirty 69632
-writeback 0
-pgpgin 85573974
-pgpgout 85396501
-pgfault 296366011
-pgmajfault 80
-inactive_anon 1687552
-active_anon 611213312
-inactive_file 32800768
-active_file 81166336
-unevictable 0
-hierarchical_memory_limit 5368709120
-total_cache 119492608
-total_rss 607436800
-total_rss_huge 0
-total_shmem 5525504
-total_mapped_file 1675264
-total_dirty 69632
-total_writeback 0
-total_pgpgin 85573974
-total_pgpgout 85396501
-total_pgfault 296366011
-total_pgmajfault 80
-total_inactive_anon 1687552
-total_active_anon 611213312
-total_inactive_file 32800768
-total_active_file 81166336
-total_unevictable 0
-</code></pre>
-<p>内存信息来自：<br>
-Limits:<br>
-memory:  5Gi<br>
-Requests:<br>
-memory:   4Gi</p>
-<p>下面是容器内的提示。在这一行程序中，我获取所有进程ID，在它们上运行pmap-x，并从pmap结果中提取kbytes列。总的结果是256兆字节（远小于PS的RSS，我认为部分原因是许多进程没有从PMAP-X返回输出）：</p>
-<pre><code>ps aux | awk '{print $2}' | grep -v PID | xargs sudo pmap -x | grep total | grep -v grep | awk '{print $3}' | awk '{s+=$1} END {printf &quot;%.0f&quot;, s}'; echo
-256820
-</code></pre>
-<p>https://github.com/google/cadvisor/issues/638中提到了。它检查kubectl describe pod <pod>和pmap。这里没有照明（同样，它似乎忽略了一些过程）：</p>
-<pre><code># python ps_mem.py
-Private  +   Shared  =  RAM used    Program
-
-  1.7 MiB +   1.0 MiB =   2.7 MiB   apache2
-  2.0 MiB +   1.0 MiB =   3.0 MiB   bash (3)
----------------------------------
-                          5.7 MiB
-=================================
-</code></pre>
-<p>最佳答案</p>
-<pre><code>有一件事我没看到您检查这里是内核内存。这在memory.usage_in_bytes图中也有说明，但在memory.stat中没有出现。您可以通过查看/sys/fs/cgroup/memory/memory.kmem.usage_in_bytes找到它。
-有一次，我看到我们的一个.NET核心应用程序也发生了类似的事情，但我不知道到底发生了什么（可能是.NET核心内存泄漏，因为它是我们的应用程序无法控制的非托管内存）。这将取决于您的应用程序使用是否正常，但就cgroups而言，我相信内核内存使用在默认情况下是不受约束的。
 </code></pre>
 ]]></content>
     </entry>
