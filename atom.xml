@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2020-10-28T08:41:40.451Z</updated>
+    <updated>2020-10-29T02:29:52.487Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -87,7 +87,7 @@
 <ul>
 <li>prometheus-operator已测试，可正常获取数据</li>
 <li>修改部分代码解决部分监控项无法获取数据</li>
-<li>读写数据需指定为分布式表</li>
+<li>读写数据需指定为分布式表(官方不建议写入分布式表)，或者配置2个write地址，每个地址落在每个分片上</li>
 <li>修改为按天分区</li>
 </ul>
 <h3 id="prom2click流程图">prom2click流程图</h3>
