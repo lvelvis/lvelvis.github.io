@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2021-02-24T02:59:01.561Z</updated>
+    <updated>2021-03-10T10:03:36.178Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="http://lvelvis.github.io"/>
     <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
@@ -10,6 +10,80 @@
     <logo>http://lvelvis.github.io/images/avatar.png</logo>
     <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, lvelvis</rights>
+    <entry>
+        <title type="html"><![CDATA[go学习笔记-init函数及多个defer执行顺序]]></title>
+        <id>http://lvelvis.github.io/post/go-xue-xi-bi-ji-init-han-shu-ji-duo-ge-defer-zhi-xing-shun-xu/</id>
+        <link href="http://lvelvis.github.io/post/go-xue-xi-bi-ji-init-han-shu-ji-duo-ge-defer-zhi-xing-shun-xu/">
+        </link>
+        <updated>2021-03-10T09:26:02.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="前提">前提</h1>
+<p>golang中有个神奇的函数init,该函数会在所有程序执行开始前被调用，每个包可以包含多个init函数，所有被编辑器识别到的init函数都会在main函数执行前被调用。通常被用来注册一个程序需要使用的依赖，如mysql注册，配置文件加载等。</p>
+<h1 id="示例如下">示例如下：</h1>
+<pre><code>package main
+
+import (
+	&quot;fmt&quot;
+	&quot;strconv&quot;
+)
+
+var (
+	a = 1
+	b = 2
+	c = a + b
+	d string
+)
+
+func init() {
+	d = &quot;str&quot;
+	fmt.Println(&quot;init is running...&quot;)
+}
+
+func test1() (e string) {
+	defer func() {
+		fmt.Println(&quot;test1 defer is running...&quot;)
+	}()
+	e = strconv.Itoa(a) + strconv.Itoa(b) + strconv.Itoa(c) + d
+	return e
+}
+func test2() (e string){
+	defer func() {
+		fmt.Println(&quot;test2 defer is running...&quot;)
+	}()
+	e = strconv.Itoa(a) + strconv.Itoa(b) + strconv.Itoa(c) + d
+	return e
+}
+
+func main() {
+	defer test1()
+	defer test2()
+
+	fmt.Printf(&quot;test1 = %s\n&quot;, test1())
+	fmt.Printf(&quot;test2 = %s\n&quot;, test2())
+	fmt.Println(&quot;main is running...&quot;)
+
+}
+</code></pre>
+<p>执行结果：</p>
+<pre><code>#&gt;go run test_init01.go
+init is running...
+test1 defer is running...
+test1 = 123str
+test2 defer is running...
+test2 = 123str
+main is running...
+test2 defer is running...    //同一个函数里的defer是倒序执行，先注册后执行
+test1 defer is running...
+
+</code></pre>
+<h1 id="结论">结论</h1>
+<pre><code>1. 多个defer的执行顺序为&quot; 后进先出 &quot;,先注册的defer后执行；
+2. defer、return、返回值三者的执行逻辑应该是：
+    init、defer、return、返回值三者的执行顺序应该是：init优先执行，return再给返回值赋值；接着defer开始执行一些收尾工作；最后RET指令携带返回值退出函数。
+
+
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[elasticsearch 使用 reindex 来修改索引mapping]]></title>
         <id>http://lvelvis.github.io/post/elasticsearch-shi-yong-reindex-lai-xiu-gai-suo-yin-mapping/</id>
@@ -707,189 +781,6 @@ string:=strconv.FormatInt(int64,10)  ```
 
 同类型之间转换，比如int64到int，直接int(int64)即可；
 </code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[golang笔记-go-restful]]></title>
-        <id>http://lvelvis.github.io/post/golang-bi-ji-go-restful/</id>
-        <link href="http://lvelvis.github.io/post/golang-bi-ji-go-restful/">
-        </link>
-        <updated>2020-06-22T06:45:14.000Z</updated>
-        <content type="html"><![CDATA[<p>用golang写一个restful api。如果您不知道什么是restful,可以看<a href="http://www.ruanyifeng.com/blog/2014/05/restful_api.html">阮一峰老师的教程</a></p>
-<p>首先，我们需要解决的是路由的问题，也就是如何将不同的url映射到不同的处理函数。</p>
-<pre><code>    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
-    router.POST(&quot;/api/todo/&quot;, addTodo)
-    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
-    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
-</code></pre>
-<p>作为一个初学者，我马上打开github,找到了<a href="https://github.com/avelino/awesome-go">awesome-go</a>,经过一番调研，我感觉有几个http router的库比较适合：bone, httprouter, mux</p>
-<h2 id="基本框架">基本框架</h2>
-<p>首先，我们设计了四个路由，分别为根据Id获得todo，增加todo，修改todo，删除todo。这里关于解析路由参数，我们使用了httprouter.Params的ByName函数。</p>
-<pre><code>package main
-
-import (
-  &quot;fmt&quot;
-  &quot;github.com/julienschmidt/httprouter&quot;
-  &quot;net/http&quot;
-  &quot;log&quot;
-  &quot;io&quot;
-  &quot;io/ioutil&quot;
-)
-
-func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  fmt.Fprintf(w, &quot;getTodo %s\n&quot;, todoid)
-}
-
-func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
-  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-  fmt.Fprintf(w, &quot;addTodo! %s\n&quot;,body)
-}
-
-func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  fmt.Fprintf(w, &quot;deleteTodo %s\n&quot;, todoid)
-}
-
-func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-  fmt.Fprintf(w, &quot;modifyTodo %s to %s\n&quot;, todoid, body)
-}
-
-func main() {
-    router := httprouter.New()
-    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
-    router.POST(&quot;/api/todo/&quot;, addTodo)
-    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
-    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
-    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
-}
-</code></pre>
-<p>我们可以用curl来测试一下我们的api,以put为例</p>
-<pre><code>curl --data &quot;content=shopping&amp;time=tomorrow&quot; http://127.0.0.1:8080/api/todo/123 -X PUT
-
-// modifyTodo 123 to content=shopping&amp;time=tomorrow
-</code></pre>
-<h2 id="json的解析">json的解析</h2>
-<p>我们在使用restful api的时候，常常需要给后台传递数据。从上面可以看到，我们通过http.Request的Body属性可以获得数据</p>
-<pre><code>body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-</code></pre>
-<p>从上面，我们读出的数据是[]byte，但是我们希望将其解析为对象，那么在这之前，我们需要先定义我们的struct。假设我们的todo只有一个字段，就是Name</p>
-<pre><code>type Todo struct {
-    Name      string
-}
-</code></pre>
-<p>现在我们可以这样解析</p>
-<pre><code>var todo Todo;
-json.Unmarshal(body, &amp;todo);
-</code></pre>
-<h2 id="model层设计">model层设计</h2>
-<pre><code>package main
-
-import (
-  &quot;gopkg.in/mgo.v2&quot;
-  &quot;fmt&quot;
-  &quot;log&quot;
-  &quot;gopkg.in/mgo.v2/bson&quot;
-)
-
-var session *mgo.Session
-
-func init(){
-  session,_ = mgo.Dial(&quot;mongodb://127.0.0.1&quot;)
-}
-
-type Todo struct {
-    Name      string
-}
-
-func createTodo(t Todo){
-  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
-  c.Insert(&amp;t)
-}
-
-func queryTodoById(id string){
-  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
-  result := Todo{}
-
-  err := c.Find(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}).One(&amp;result)
-  if err != nil {
-    log.Fatal(err)
-  }
-
-  fmt.Println(&quot;Todo:&quot;, result.Name)
-}
-
-func removeTodo(id string){
-  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
-  err := c.Remove(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)})
-  if err != nil{
-    log.Fatal(err)
-  }
-}
-
-func updateTodo(id string, update interface{}){
-  //change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: &quot;hahaha&quot;}}
-  c := session.DB(&quot;test&quot;).C(&quot;todo&quot;)
-  err := c.Update(bson.M{&quot;_id&quot;: bson.ObjectIdHex(id)}, update)
-  if err != nil{
-    log.Fatal(err)
-  }
-}
-</code></pre>
-<p>我们定义了Todo的struct,并添加了几种函数。</p>
-<pre><code>package main
-
-import (
-  &quot;fmt&quot;
-  &quot;github.com/julienschmidt/httprouter&quot;
-  &quot;net/http&quot;
-  &quot;log&quot;
-  &quot;io&quot;
-  &quot;io/ioutil&quot;
-  &quot;encoding/json&quot;
-  &quot;gopkg.in/mgo.v2/bson&quot;
-)
-
-func getTodoById(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  queryTodoById(todoid)
-  fmt.Fprintf(w, &quot;getUser %s\n&quot;, todoid)
-}
-
-func addTodo(w http.ResponseWriter, r *http.Request, _ httprouter.Params){
-  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-  var todo Todo;
-  json.Unmarshal(body, &amp;todo);
-  createTodo(todo)
-  fmt.Fprintf(w, &quot;addUser! %s\n&quot;,body)
-}
-
-func deleteTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  removeTodo(todoid)
-  fmt.Fprintf(w, &quot;deleteUser %s\n&quot;, todoid)
-}
-
-func modifyTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params){
-  todoid := params.ByName(&quot;todoid&quot;)
-  body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-  var todo Todo
-  json.Unmarshal(body, &amp;todo);
-  change := bson.M{&quot;$set&quot;: bson.M{&quot;name&quot;: todo.Name}}
-  updateTodo(todoid,change)
-  fmt.Fprintf(w, &quot;modifyUser %s to %s\n&quot;, todoid, body)
-}
-
-func main() {
-    router := httprouter.New()
-    router.GET(&quot;/api/todo/:todoid&quot;, getTodoById)
-    router.POST(&quot;/api/todo/&quot;, addTodo)
-    router.DELETE(&quot;/api/todo/:todoid&quot;, deleteTodo)
-    router.PUT(&quot;/api/todo/:todoid&quot;, modifyTodo)
-    log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
-}</code></pre>
 ]]></content>
     </entry>
 </feed>
