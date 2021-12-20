@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://lvelvis.github.io</id>
+    <id>http://lvelvis.github.io</id>
     <title>lvelvis</title>
-    <updated>2021-12-20T04:35:39.293Z</updated>
+    <updated>2021-12-20T04:38:03.820Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://lvelvis.github.io"/>
-    <link rel="self" href="https://lvelvis.github.io/atom.xml"/>
+    <link rel="alternate" href="http://lvelvis.github.io"/>
+    <link rel="self" href="http://lvelvis.github.io/atom.xml"/>
     <subtitle>时光,浓淡相宜;人心,远近相安;这就是最好的生活</subtitle>
-    <logo>https://lvelvis.github.io/images/avatar.png</logo>
-    <icon>https://lvelvis.github.io/favicon.ico</icon>
+    <logo>http://lvelvis.github.io/images/avatar.png</logo>
+    <icon>http://lvelvis.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, lvelvis</rights>
     <entry>
         <title type="html"><![CDATA[jenkins libaray groovy+mysql管理jenkins发布]]></title>
-        <id>https://lvelvis.github.io/post/jenkins-libaray-groovymysql-guan-li-jenkins-fa-bu/</id>
-        <link href="https://lvelvis.github.io/post/jenkins-libaray-groovymysql-guan-li-jenkins-fa-bu/">
+        <id>http://lvelvis.github.io/post/jenkins-libaray-groovymysql-guan-li-jenkins-fa-bu/</id>
+        <link href="http://lvelvis.github.io/post/jenkins-libaray-groovymysql-guan-li-jenkins-fa-bu/">
         </link>
         <updated>2021-12-20T03:28:43.000Z</updated>
         <content type="html"><![CDATA[<h2 id="依赖环境">依赖环境</h2>
@@ -21,7 +21,7 @@
 2. jenkins kubernetes cloud配置  
 2.1 jenkins插件安装：在jenkins插件管理页面安装database、MySQL Database Plugin、Timestamper、ansiColor、build user vars、Groovy Postbuild、build-name-setter等
 </code></pre>
-<p><img src="https://lvelvis.github.io/post-images/1639971809359.png" alt="" loading="lazy"><br>
+<p><img src="http://lvelvis.github.io/post-images/1639971809359.png" alt="" loading="lazy"><br>
 1.docker-compose管理启动mysql<br>
 2.libaray groovy模块化拆分，管理jenkins发布</p>
 <pre><code>2.1 钉钉推送构建成功/失败通知
@@ -78,8 +78,8 @@ DockerDeploy(env_name,branchName,git_hash_id,app,imageName,Image,Image_tag,table
     </entry>
     <entry>
         <title type="html"><![CDATA[Clickhouse删除表分区]]></title>
-        <id>https://lvelvis.github.io/post/clickhouse-shan-chu-biao-fen-qu/</id>
-        <link href="https://lvelvis.github.io/post/clickhouse-shan-chu-biao-fen-qu/">
+        <id>http://lvelvis.github.io/post/clickhouse-shan-chu-biao-fen-qu/</id>
+        <link href="http://lvelvis.github.io/post/clickhouse-shan-chu-biao-fen-qu/">
         </link>
         <updated>2020-11-04T02:19:49.000Z</updated>
         <content type="html"><![CDATA[<pre><code>ALTER 仅支持 *MergeTree ，Merge以及Distributed等引擎表。
@@ -114,8 +114,8 @@ ALTER TABLE [db].name [ON CLUSTER cluster] ADD|DROP|CLEAR|COMMENT|MODIFY COLUMN 
     </entry>
     <entry>
         <title type="html"><![CDATA[prometheus监控数据远程存储clickhouse集群]]></title>
-        <id>https://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/</id>
-        <link href="https://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/">
+        <id>http://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/</id>
+        <link href="http://lvelvis.github.io/post/prometheus-jian-kong-shu-ju-yuan-cheng-cun-chu-clickhouse-ji-qun/">
         </link>
         <updated>2020-10-28T07:36:32.000Z</updated>
         <content type="html"><![CDATA[<h2 id="前提">前提</h2>
@@ -174,13 +174,13 @@ ALTER TABLE [db].name [ON CLUSTER cluster] ADD|DROP|CLEAR|COMMENT|MODIFY COLUMN 
 </tbody>
 </table>
 <h2 id="remote-write">Remote Write</h2>
-<p><img src="https://lvelvis.github.io/post-images/1603871818190.png" alt="" loading="lazy"><br>
+<p><img src="http://lvelvis.github.io/post-images/1603871818190.png" alt="" loading="lazy"><br>
 用户可以在Prometheus配置文件中指定Remote Write(远程写)的URL地址，一旦设置了该配置项，Prometheus将采集到的样本数据通过HTTP的形式发送给适配器(Adaptor)。而用户则可以在适配器中对接外部任意的服务。外部服务可以是真正的存储系统，公有云的存储服务，也可以是消息队列等任意形式。</p>
 <ul>
 <li>可同时启用配置TSDB存储1一天数据，其他数据使用远程存储；查询近1天数据，从tsdb获取，其他数据从远程存储获取</li>
 </ul>
 <h2 id="remote-read">Remote Read</h2>
-<p><img src="https://lvelvis.github.io/post-images/1603872148839.png" alt="" loading="lazy"><br>
+<p><img src="http://lvelvis.github.io/post-images/1603872148839.png" alt="" loading="lazy"><br>
 如下图所示，Promthues的Remote Read(远程读)也通过了一个适配器实现。在远程读的流程当中，当用户发起查询请求后，Promthues将向remote_read中配置的URL发起查询请求(matchers,ranges)，Adaptor根据请求条件从第三方存储服务中获取响应的数据。同时将数据转换为Promthues的原始样本数据返回给Prometheus Server。</p>
 <p>当获取到样本数据后，Promthues在本地使用PromQL对样本数据进行二次处理。</p>
 <h2 id="prom2click适配器">prom2click适配器</h2>
@@ -193,7 +193,7 @@ ALTER TABLE [db].name [ON CLUSTER cluster] ADD|DROP|CLEAR|COMMENT|MODIFY COLUMN 
 <li>修改为按天分区</li>
 </ul>
 <h3 id="prom2click流程图">prom2click流程图</h3>
-<p><img src="https://lvelvis.github.io/post-images/1603872379113.png" alt="" loading="lazy"><br>
+<p><img src="http://lvelvis.github.io/post-images/1603872379113.png" alt="" loading="lazy"><br>
 *prom2click与clickhouse的连接使用的长链接；因此需要多配置几个prom2click服务(默认使用配置-ch.dsn第一个clickhoue节点)，均衡clickhouse查询压力。</p>
 <h2 id="clickhouse-环境">clickhouse 环境</h2>
 <pre><code>clickhouse-server --version
@@ -276,8 +276,8 @@ remote_read:
     </entry>
     <entry>
         <title type="html"><![CDATA[kafka数据导入到Clickhouse]]></title>
-        <id>https://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/</id>
-        <link href="https://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/">
+        <id>http://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/</id>
+        <link href="http://lvelvis.github.io/post/kafka-shu-ju-dao-ru-dao-clickhouse/">
         </link>
         <updated>2020-10-28T03:26:38.000Z</updated>
         <content type="html"><![CDATA[<pre><code>Kafka 是目前应用非常广泛的开源消息中间件，一个常用的的场景就是做数据总线收集各个服务的消息日志，下游各种数据服务订阅消费数据，生成各种报表或数据应用等。Clickhouse 的自带了 Kafka Engine，使得 Clickhouse 和 Kafka 的集成变得非常容易。
@@ -330,12 +330,12 @@ https://clickhouse.yandex/docs/en/table_engines/kafka.html</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[clickhouse基本操作]]></title>
-        <id>https://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/</id>
-        <link href="https://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/">
+        <id>http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/</id>
+        <link href="http://lvelvis.github.io/post/clickhouse-ji-ben-cao-zuo/">
         </link>
         <updated>2020-10-27T04:09:31.000Z</updated>
         <content type="html"><![CDATA[<h2 id="一-先来说一下clickhouse为啥快">一、先来说一下，ClickHouse为啥快</h2>
-<figure data-type="image" tabindex="1"><img src="https://lvelvis.github.io/post-images/1603856102146.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="http://lvelvis.github.io/post-images/1603856102146.gif" alt="" loading="lazy"></figure>
 <pre><code>ClickHouse有多少CPU，吃多少资源，所以飞快；
 ClickHouse不支持事务，不存在隔离级别。这里要额外说一下，有人觉得，你一个数据库都不支持事务，不支持ACID还玩个毛。ClickHouse的定位是分析性数据库，而不是严格的关系型数据库。又有人要问了，数据都不一致，统计个毛。举个例子，汽车的油表是100%准确么？为了获得一个100%准确的值，难道每次测量你都要停车检查么？统计数据的意义在于用大量的数据看规律，看趋势，而不是100%准确。
 IO方面，MySQL是行存储，ClickHouse是列存储，后者在count()这类操作天然有优势，同时，在IO方面，MySQL需要大量随机IO，ClickHouse基本是顺序IO。
@@ -362,7 +362,7 @@ table：本地表名。<br>
 rand()：分片方式：随机。<br>
 intHash64():分片方式：指定字段做hash。<br>
 Distribute引擎会选择每个分发到的Shard中的”健康的”副本执行SQL<br>
-<img src="https://lvelvis.github.io/post-images/1603771933311.jpg" alt="" loading="lazy"></p>
+<img src="http://lvelvis.github.io/post-images/1603771933311.jpg" alt="" loading="lazy"></p>
 <h2 id="五-ddl">五、DDL</h2>
 <p>如果想按集群操作，需要借助zookeeper，在config.xml中添加配置<br>
 &lt;distributed_ddl&gt;<br>
@@ -414,8 +414,8 @@ select toDateTime(1543075202);</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[kafka消费命令]]></title>
-        <id>https://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/</id>
-        <link href="https://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/">
+        <id>http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/</id>
+        <link href="http://lvelvis.github.io/post/kafka-xiao-fei-ming-ling/">
         </link>
         <updated>2020-09-28T08:12:09.000Z</updated>
         <content type="html"><![CDATA[<p>模拟生产消息：</p>
@@ -428,8 +428,8 @@ select toDateTime(1543075202);</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[logstash output file to HDFS]]></title>
-        <id>https://lvelvis.github.io/post/logstash-output-file-to-hdfs/</id>
-        <link href="https://lvelvis.github.io/post/logstash-output-file-to-hdfs/">
+        <id>http://lvelvis.github.io/post/logstash-output-file-to-hdfs/</id>
+        <link href="http://lvelvis.github.io/post/logstash-output-file-to-hdfs/">
         </link>
         <updated>2020-09-04T02:45:33.000Z</updated>
         <content type="html"><![CDATA[<p>logstash 直接把文件内容写入 hdfs 中， 并支持 hdfs 压缩格式。<br>
@@ -530,8 +530,8 @@ losgstash 需要能解析所有 hadoop 集群所有节点的主机名。
     </entry>
     <entry>
         <title type="html"><![CDATA[ceph报错管理]]></title>
-        <id>https://lvelvis.github.io/post/ceph-bao-cuo-guan-li/</id>
-        <link href="https://lvelvis.github.io/post/ceph-bao-cuo-guan-li/">
+        <id>http://lvelvis.github.io/post/ceph-bao-cuo-guan-li/</id>
+        <link href="http://lvelvis.github.io/post/ceph-bao-cuo-guan-li/">
         </link>
         <updated>2020-08-25T10:12:33.000Z</updated>
         <content type="html"><![CDATA[<p>使用ceph -s查看集群状态，发现一直有如下报错，且数量一直在增加</p>
@@ -555,8 +555,8 @@ losgstash 需要能解析所有 hadoop 集群所有节点的主机名。
     </entry>
     <entry>
         <title type="html"><![CDATA[golang笔记-string、int、int64互相转换]]></title>
-        <id>https://lvelvis.github.io/post/golang-bi-ji-stringintint64-hu-xiang-zhuan-huan/</id>
-        <link href="https://lvelvis.github.io/post/golang-bi-ji-stringintint64-hu-xiang-zhuan-huan/">
+        <id>http://lvelvis.github.io/post/golang-bi-ji-stringintint64-hu-xiang-zhuan-huan/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-stringintint64-hu-xiang-zhuan-huan/">
         </link>
         <updated>2020-08-10T08:35:04.000Z</updated>
         <content type="html"><![CDATA[<pre><code>#string到int  
@@ -574,8 +574,8 @@ string:=strconv.FormatInt(int64,10)  ```
     </entry>
     <entry>
         <title type="html"><![CDATA[golang笔记-go-restful]]></title>
-        <id>https://lvelvis.github.io/post/golang-bi-ji-go-restful/</id>
-        <link href="https://lvelvis.github.io/post/golang-bi-ji-go-restful/">
+        <id>http://lvelvis.github.io/post/golang-bi-ji-go-restful/</id>
+        <link href="http://lvelvis.github.io/post/golang-bi-ji-go-restful/">
         </link>
         <updated>2020-06-22T06:45:14.000Z</updated>
         <content type="html"><![CDATA[<p>用golang写一个restful api。如果您不知道什么是restful,可以看<a href="http://www.ruanyifeng.com/blog/2014/05/restful_api.html">阮一峰老师的教程</a></p>
